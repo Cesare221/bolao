@@ -3,9 +3,13 @@ import { ensureLocalSeed } from './localStore'
 import { brazilCupMatches, brazilCupParticipants, brazilCupRankings } from '../data/brazilCupData'
 
 async function insertMissingMatches() {
-  const { data: existingMatches } = await supabase
+  const { data: existingMatches, error } = await supabase
     .from('matches')
     .select('api_id')
+
+  if (error) {
+    return false
+  }
 
   if ((existingMatches || []).length > 0) {
     return false
@@ -22,9 +26,13 @@ async function insertMissingMatches() {
 }
 
 async function insertMissingParticipants() {
-  const { data: existingParticipants } = await supabase
+  const { data: existingParticipants, error } = await supabase
     .from('participants')
     .select('name')
+
+  if (error) {
+    return []
+  }
 
   if ((existingParticipants || []).length > 0) {
     return (await supabase
@@ -47,9 +55,13 @@ async function insertMissingParticipants() {
 }
 
 async function insertMissingRankings(participants) {
-  const { data: existingRankings } = await supabase
+  const { data: existingRankings, error } = await supabase
     .from('rankings')
     .select('participant_id')
+
+  if (error) {
+    return false
+  }
 
   if ((existingRankings || []).length > 0) {
     return false
@@ -96,12 +108,8 @@ export async function syncBrazilMatches() {
     return false
   }
 
-  try {
-    await insertMissingMatches()
-    const participants = await insertMissingParticipants()
-    await insertMissingRankings(participants)
-    return true
-  } catch {
-    return false
-  }
+  // The browser should not try to seed Supabase directly.
+  // Read paths already fall back to the local dataset, and writes are handled
+  // by the admin flow or trusted backend jobs.
+  return false
 }
