@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { LockKeyhole, ShieldCheck } from 'lucide-react'
 
 export function AdminLayout({ children }) {
   const [password, setPassword] = useState('')
@@ -20,7 +21,11 @@ export function AdminLayout({ children }) {
     return (
       <div className="admin-login">
         <div className="login-card">
-          <h2>Acesso Admin</h2>
+          <div className="login-icon">
+            <LockKeyhole size={28} />
+          </div>
+          <h2>Acesso admin</h2>
+          <p className="login-helper">Entre para atualizar resultados e ranking.</p>
           <form onSubmit={handleLogin}>
             {error && <div className="error-message">{error}</div>}
             <div className="form-group">
@@ -44,8 +49,13 @@ export function AdminLayout({ children }) {
   return (
     <div className="admin-layout">
       <div className="admin-header">
-        <h1>Painel Administrativo</h1>
-        <button onClick={() => setIsAuthenticated(false)} className="btn-logout">Sair</button>
+        <div className="admin-header-title">
+          <ShieldCheck size={18} />
+          <h1>Painel administrativo</h1>
+        </div>
+        <button onClick={() => setIsAuthenticated(false)} className="btn-logout">
+          Sair
+        </button>
       </div>
       {children}
     </div>

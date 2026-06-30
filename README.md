@@ -9,14 +9,13 @@ Desenvolvido por Cesar Augusto.
 - React 18 + Vite
 - Netlify (hospedagem + functions)
 - Supabase (banco de dados PostgreSQL)
-- API-Football (placares e dados dos jogos)
+- Fallback local no navegador para teste e contingencia
 
 ## Requisitos
 
 - Node.js 18+
 - Conta gratuita no Netlify
 - Conta gratuita no Supabase
-- Chave de API do API-Football (https://www.api-football.com/)
 
 ## Instalacao
 
@@ -36,14 +35,30 @@ Crie um arquivo `.env` na raiz do projeto:
 ```env
 VITE_SUPABASE_URL=https://seu-projeto.supabase.co
 VITE_SUPABASE_ANON_KEY=sua-chave-anonima
-VITE_API_FOOTBALL_KEY=sua-chave-api-football
 VITE_ADMIN_PASSWORD=senha-do-admin
 ```
 
-**Importante:** No Netlify, configure essas mesmas variaveis no painel:
-- Site Settings > Build & Deploy > Environment Variables
-- As variaveis VITE_ sao expostas ao frontend
-- A chave da API-Football tambem e usada nas Netlify Functions (process.env.API_FOOTBALL_KEY)
+**Importante:** No Netlify, configure as mesmas variaveis no painel:
+- `VITE_...` vai para o frontend
+- `SUPABASE_URL` e `SUPABASE_ANON_KEY` ficam para as Netlify Functions
+- `API_FOOTBALL_KEY` e opcional, se voce quiser a sincronizacao externa
+- Painel: `Site Settings > Build & Deploy > Environment Variables`
+
+## Roadmap Para Acessar o Site
+
+Se voce quer ir direto ao ponto, siga este roteiro:
+
+1. Criar o projeto no Supabase
+2. Copiar `Project URL` e `anon public key`
+3. Preencher o arquivo `.env`
+4. Executar `supabase/migrations/001_initial_schema.sql`
+5. Executar `supabase/migrations/002_public_access_policies.sql`
+6. Executar `supabase/seed.sql`
+7. Rodar `npm run dev` para testar localmente
+8. Fazer deploy no Netlify
+9. Abrir a URL gerada pelo Netlify
+
+O passo a passo completo esta em [`ROADMAP_ACESSO.md`](./ROADMAP_ACESSO.md).
 
 ## Banco de Dados (Supabase)
 
@@ -61,13 +76,6 @@ npm run dev
 ```
 
 O frontend sera executado em http://localhost:5173
-
-Para testar as Netlify Functions localmente, instale o Netlify CLI:
-
-```bash
-npm install -g netlify-cli
-netlify dev
-```
 
 ## Deploy no Netlify
 
@@ -92,12 +100,12 @@ npx netlify deploy --prod
 - Envio de palpites (maximo 2 por pessoa)
 - Ranking com pontuacao
 - Painel admin protegido por senha
-- Atualizacao automatica de placares via API
+- Atualizacao automatica dos jogos do Brasil quando a API estiver configurada
+- Fallback local para testes quando o Supabase estiver vazio ou bloqueado
 
 ## Regras de Pontuacao
 
 | Resultado | Pontos |
 |-----------|--------|
-| Placar exato | 5 pontos |
-| Acertou vencedor/empate | 3 pontos |
+| Acertou o resultado | 1 ponto |
 | Errou | 0 pontos |

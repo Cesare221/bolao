@@ -1,13 +1,31 @@
 import React from 'react'
+import { Crown, Medal, Award } from 'lucide-react'
+import { isExcludedParticipantName } from '../data/excludedParticipants'
+
+function sortRankings(rankings) {
+  return [...rankings].sort((a, b) => {
+    if ((b.total_points || 0) !== (a.total_points || 0)) {
+      return (b.total_points || 0) - (a.total_points || 0)
+    }
+
+    if ((b.exact_scores || 0) !== (a.exact_scores || 0)) {
+      return (b.exact_scores || 0) - (a.exact_scores || 0)
+    }
+
+    return String(a.participant_name || '').localeCompare(String(b.participant_name || ''), 'pt-BR')
+  })
+}
 
 export function RankingTable({ rankings }) {
-  if (!rankings || rankings.length === 0) {
+  const visibleRankings = (rankings || []).filter(participant => !isExcludedParticipantName(participant.participant_name))
+
+  if (visibleRankings.length === 0) {
     return <p className="empty-state">Nenhum participante no ranking ainda.</p>
   }
 
   return (
     <div className="ranking-container">
-      {rankings.map((participant, index) => {
+      {sortRankings(visibleRankings).map((participant, index) => {
         const position = index + 1
         const isPodium = position <= 3
 
@@ -16,23 +34,13 @@ export function RankingTable({ rankings }) {
             key={participant.participant_id}
             className={`ranking-row ${isPodium ? `podium-${position}` : ''}`}
           >
-            <div className="position-badge">{position}</div>
+            <div className="position-badge">
+              {position === 1 ? <Crown size={16} /> : position === 2 ? <Medal size={16} /> : position === 3 ? <Award size={16} /> : `${position}º`}
+            </div>
             <div className="participant-info">
               <span className="participant-name">{participant.participant_name}</span>
-              {participant.sector && (
-                <span className="participant-sector">{participant.sector}</span>
-              )}
             </div>
-            <div className="participant-stats">
-              <div className="stat">
-                <span className="stat-value">{participant.total_points}</span>
-                <span className="stat-label">pts</span>
-              </div>
-              <div className="stat-detail">
-                <span title="Placares exatos">{participant.exact_scores}E</span>
-                <span title="Acertos de vencedor/empate">{participant.correct_outcomes}A</span>
-              </div>
-            </div>
+            <div className="points-pill">{participant.total_points} pts</div>
           </div>
         )
       })}

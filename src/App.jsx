@@ -6,6 +6,7 @@ import PredictionPage from './pages/PredictionPage'
 import RankingPage from './pages/RankingPage'
 import AdminPage from './pages/AdminPage'
 import './App.css'
+import { House, CalendarDays, Trophy, Shield } from 'lucide-react'
 
 export default function App() {
   return (
@@ -20,19 +21,19 @@ export default function App() {
         </Routes>
         <nav className="bottom-nav">
           <NavLink to="/" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-            <span className="nav-icon">🏠</span>
+            <House className="nav-icon" />
             <span className="nav-label">Home</span>
           </NavLink>
           <NavLink to="/jogos" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-            <span className="nav-icon">⚽</span>
+            <CalendarDays className="nav-icon" />
             <span className="nav-label">Jogos</span>
           </NavLink>
           <NavLink to="/ranking" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-            <span className="nav-icon">🏆</span>
+            <Trophy className="nav-icon" />
             <span className="nav-label">Ranking</span>
           </NavLink>
           <NavLink to="/admin" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-            <span className="nav-icon">⚙️</span>
+            <Shield className="nav-icon" />
             <span className="nav-label">Admin</span>
           </NavLink>
         </nav>

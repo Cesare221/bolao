@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { saveLocalPrediction } from '../services/localStore'
+import { Send, User, Users } from 'lucide-react'
 
 export function PredictionForm({ match, onSuccess }) {
   const [name, setName] = useState('')
@@ -15,24 +17,43 @@ export function PredictionForm({ match, onSuccess }) {
     setError('')
     setLoading(true)
 
+    const normalizedName = name.trim()
+    const normalizedSector = sector.trim()
+
     try {
-      let { data: participant } = await supabase
+      if (match.id.startsWith('local-')) {
+        saveLocalPrediction({
+          matchId: match.id,
+          name: normalizedName,
+          sector: normalizedSector,
+          brazilScore: parseInt(brazilScore, 10),
+          opponentScore: parseInt(opponentScore, 10)
+        })
+        setSuccess(true)
+        setTimeout(() => onSuccess(), 1000)
+        return
+      }
+
+      let { data: participant, error: participantError } = await supabase
         .from('participants')
         .select('*')
-        .eq('name', name)
-        .single()
+        .ilike('name', normalizedName)
+        .maybeSingle()
+
+      if (participantError) {
+        throw participantError
+      }
 
       if (!participant) {
         const { data, error: createError } = await supabase
           .from('participants')
-          .insert({ name, sector })
-          .select()
+          .insert({ name: normalizedName, sector: normalizedSector })
+          .select('*')
           .single()
         if (createError) throw createError
         participant = data
       }
 
-      // Double-check prediction count client-side
       if (participant.prediction_count >= 2) {
         throw new Error('Voce ja usou seus 2 palpites!')
       }
@@ -42,8 +63,8 @@ export function PredictionForm({ match, onSuccess }) {
         .insert({
           participant_id: participant.id,
           match_id: match.id,
-          brazil_score: parseInt(brazilScore),
-          opponent_score: parseInt(opponentScore)
+          brazil_score: parseInt(brazilScore, 10),
+          opponent_score: parseInt(opponentScore, 10)
         })
 
       if (predictionError) {
@@ -56,7 +77,20 @@ export function PredictionForm({ match, onSuccess }) {
       setSuccess(true)
       setTimeout(() => onSuccess(), 2000)
     } catch (err) {
-      setError(err.message)
+      try {
+        saveLocalPrediction({
+          matchId: match.id,
+          name: normalizedName,
+          sector: normalizedSector,
+          brazilScore: parseInt(brazilScore, 10),
+          opponentScore: parseInt(opponentScore, 10)
+        })
+        setSuccess(true)
+        setTimeout(() => onSuccess(), 1000)
+        return
+      } catch (fallbackError) {
+        setError(fallbackError.message || err.message)
+      }
     } finally {
       setLoading(false)
     }
@@ -74,11 +108,11 @@ export function PredictionForm({ match, onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit} className="prediction-form">
-      <h2>Seu Palpite</h2>
+      <h2>Seu palpite</h2>
       {error && <div className="error-message">{error}</div>}
 
       <div className="form-group">
-        <label htmlFor="name">Nome</label>
+        <label htmlFor="name"><User size={14} /> Nome</label>
         <input
           id="name"
           type="text"
@@ -90,7 +124,7 @@ export function PredictionForm({ match, onSuccess }) {
       </div>
 
       <div className="form-group">
-        <label htmlFor="sector">Setor (opcional)</label>
+        <label htmlFor="sector"><Users size={14} /> Setor (opcional)</label>
         <input
           id="sector"
           type="text"
@@ -129,7 +163,7 @@ export function PredictionForm({ match, onSuccess }) {
       </div>
 
       <button type="submit" className="btn-submit" disabled={loading}>
-        {loading ? 'Enviando...' : 'Enviar Palpite'}
+        {loading ? 'Enviando...' : (<><Send size={16} /> Enviar Palpite</>)}
       </button>
     </form>
   )

@@ -2,14 +2,18 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { MatchCard } from '../components/MatchCard'
+import { syncBrazilMatches } from '../services/matchSync'
+import { getLocalMatches } from '../services/localStore'
+import { ArrowRight, CalendarDays, Sparkles, Trophy } from 'lucide-react'
 
 export default function HomePage() {
   const [nextMatch, setNextMatch] = useState(null)
-  const [nextMatchPrediction, setNextMatchPrediction] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchData() {
+      await syncBrazilMatches()
+
       const { data: matches } = await supabase
         .from('matches')
         .select('*')
@@ -19,17 +23,34 @@ export default function HomePage() {
 
       if (matches && matches.length > 0) {
         setNextMatch(matches[0])
+      } else {
+        const localMatches = getLocalMatches()
+        const nextLocalMatch = localMatches.find(match => new Date(match.match_date) >= new Date()) || localMatches[0] || null
+        setNextMatch(nextLocalMatch)
       }
+
       setLoading(false)
     }
+
     fetchData()
   }, [])
 
   return (
     <div className="page home-page">
-      <header className="app-header">
-        <h1 className="app-title">BOLAO SUCT</h1>
-        <p className="app-subtitle">Bolao interno dos jogos do Brasil na Copa do Mundo</p>
+      <header className="home-hero">
+        <div className="hero-trophy" aria-hidden="true">
+          <Trophy size={92} strokeWidth={1.6} />
+        </div>
+        <div className="hero-badge">
+          <Sparkles size={14} />
+          Bolão do UCT
+        </div>
+        <h1 className="app-title">Bolão do UCT</h1>
+        <p className="app-subtitle">Faça seus palpites para os jogos da seleção.</p>
+        <div className="hero-pills">
+          <span className="hero-pill"><CalendarDays size={14} /> Próximo jogo</span>
+          <span className="hero-pill"><Trophy size={14} /> Ranking ao vivo</span>
+        </div>
       </header>
 
       <main className="home-content">
@@ -37,15 +58,22 @@ export default function HomePage() {
           <p className="loading">Carregando...</p>
         ) : nextMatch ? (
           <section className="next-match-section">
-            <h2 className="section-title">Proximo Jogo</h2>
-            <MatchCard match={nextMatch} prediction={nextMatchPrediction} />
+            <div className="section-heading">
+              <h2 className="section-title">Próximo Jogo</h2>
+              <span className="section-kicker">Atualizado automaticamente</span>
+            </div>
+            <MatchCard match={nextMatch} />
             <Link to={`/palpite/${nextMatch.id}`} className="btn-primary">
-              Enviar meu palpite
+              <span>Enviar meu palpite</span>
+              <ArrowRight size={18} />
             </Link>
           </section>
         ) : (
           <section className="next-match-section">
-            <p className="empty-state">Nenhum jogo do Brasil agendado ainda.</p>
+            <div className="empty-panel">
+              <Sparkles size={22} />
+              <p className="empty-state">Nenhum jogo do Brasil na Copa agendado ainda.</p>
+            </div>
           </section>
         )}
 
