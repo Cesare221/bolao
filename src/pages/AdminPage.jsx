@@ -88,6 +88,7 @@ export default function AdminPage() {
     const confirmDelete = window.confirm(`Excluir o jogo "${match ? `Brasil vs ${match.opponent}` : 'selecionado'}"? Esta ação também remove os palpites desse jogo.`)
     if (!confirmDelete) return
 
+    let deletedRemotely = false
     try {
       const { error } = await supabase
         .from('matches')
@@ -95,17 +96,18 @@ export default function AdminPage() {
         .eq('id', matchId)
 
       if (error) throw error
+      deletedRemotely = true
     } catch {
       // If Supabase is unavailable or locked down, remove it from local fallback too.
     } finally {
       try {
-        deleteLocalMatch(matchId)
+        deleteLocalMatch(match || matchId)
       } catch {
         // ignore local cleanup errors; fetchData will reconcile what remains
       }
     }
 
-    setStatusMessage('Jogo excluido!')
+    setStatusMessage(deletedRemotely ? 'Jogo excluido!' : 'Jogo excluido localmente!')
     setTimeout(() => setStatusMessage(''), 3000)
     setMatches(prev => prev.filter(match => match.id !== matchId))
     setPredictions(prev => prev.filter(prediction => prediction.match_id !== matchId))

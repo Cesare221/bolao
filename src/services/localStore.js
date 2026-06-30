@@ -374,20 +374,45 @@ export function addLocalParticipant({ name, sector }) {
   return ensureLocalSeed()
 }
 
-export function deleteLocalMatch(matchId) {
+export function deleteLocalMatch(matchOrId) {
   const state = ensureLocalSeed()
-  const normalizedMatchId = String(matchId)
-  const matchIndex = state.matches.findIndex(item => item.id === matchId || String(item.api_id) === normalizedMatchId)
+  const normalizedMatchId = typeof matchOrId === 'object' ? String(matchOrId?.id || '') : String(matchOrId)
+  const normalizedApiId = typeof matchOrId === 'object' && matchOrId?.api_id !== undefined && matchOrId?.api_id !== null
+    ? String(matchOrId.api_id)
+    : null
+
+  const matchIndex = state.matches.findIndex(item => {
+    const itemId = String(item.id)
+    const itemApiId = item.api_id !== undefined && item.api_id !== null ? String(item.api_id) : null
+
+    return itemId === normalizedMatchId || (normalizedApiId && itemApiId === normalizedApiId) || (normalizedMatchId && itemApiId === normalizedMatchId)
+  })
+
+  const deletedIds = new Set(state.deletedMatchIds || [])
 
   if (matchIndex === -1) {
-    throw new Error('Jogo local nao encontrado')
+    if (normalizedMatchId) {
+      deletedIds.add(normalizedMatchId)
+    }
+    if (normalizedApiId) {
+      deletedIds.add(normalizedApiId)
+    }
+
+    state.deletedMatchIds = Array.from(deletedIds)
+    persistState(state)
+    return ensureLocalSeed()
   }
 
   const removedMatch = state.matches[matchIndex]
   state.matches.splice(matchIndex, 1)
   state.predictions = state.predictions.filter(prediction => prediction.match_id !== removedMatch.id)
-  state.deletedMatchIds = Array.from(new Set([...(state.deletedMatchIds || []), String(removedMatch.id), String(removedMatch.api_id)]))
+  deletedIds.add(String(removedMatch.id))
+  if (removedMatch.api_id !== undefined && removedMatch.api_id !== null) {
+    deletedIds.add(String(removedMatch.api_id))
+  }
+  state.deletedMatchIds = Array.from(deletedIds)
 
+  persistState(state)
   recalculateLocalRankings()
   return ensureLocalSeed()
 }
