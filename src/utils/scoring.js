@@ -4,20 +4,26 @@ export const POINTS = {
 }
 
 export function calculatePoints(prediction, actualBrazilScore, actualOpponentScore) {
-  if (actualBrazilScore === null || actualOpponentScore === null) {
-    return 0
-  }
+  return calculatePredictionBreakdown(prediction, actualBrazilScore, actualOpponentScore).points
+}
 
-  if (prediction.brazil_score === actualBrazilScore && prediction.opponent_score === actualOpponentScore) {
-    return POINTS.CORRECT
+export function calculatePredictionBreakdown(prediction, actualBrazilScore, actualOpponentScore) {
+  if (actualBrazilScore === null || actualOpponentScore === null) {
+    return {
+      points: 0,
+      exactScore: 0,
+      correctOutcome: 0
+    }
   }
 
   const predictedOutcome = Math.sign(prediction.brazil_score - prediction.opponent_score)
   const actualOutcome = Math.sign(actualBrazilScore - actualOpponentScore)
+  const exactScore = prediction.brazil_score === actualBrazilScore && prediction.opponent_score === actualOpponentScore ? 1 : 0
+  const correctOutcome = predictedOutcome === actualOutcome ? 1 : 0
 
-  if (predictedOutcome === actualOutcome) {
-    return POINTS.CORRECT
+  return {
+    points: exactScore || correctOutcome ? POINTS.CORRECT : POINTS.WRONG,
+    exactScore,
+    correctOutcome
   }
-
-  return POINTS.WRONG
 }

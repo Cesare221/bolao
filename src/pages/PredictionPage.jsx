@@ -18,24 +18,34 @@ export default function PredictionPage() {
 
   useEffect(() => {
     async function fetchMatch() {
-      await syncBrazilMatches()
-      const deletedMatchIds = new Set(getDeletedMatchIds().map(String))
+      try {
+        await syncBrazilMatches()
+        const deletedMatchIds = new Set(getDeletedMatchIds().map(String))
 
-      const { data } = await supabase
-        .from('matches')
-        .select('*')
-        .eq('id', matchId)
-        .single()
+        const { data } = await supabase
+          .from('matches')
+          .select('*')
+          .eq('id', matchId)
+          .single()
 
-      const localMatch = isSupabaseConfigured ? null : getLocalMatchById(matchId)
-      const nextMatch = data && !deletedMatchIds.has(String(data.id)) && !deletedMatchIds.has(String(data.api_id))
-        ? data
-        : localMatch && !deletedMatchIds.has(String(localMatch.id)) && !deletedMatchIds.has(String(localMatch.api_id))
-          ? localMatch
-          : null
+        const localMatch = isSupabaseConfigured ? null : getLocalMatchById(matchId)
+        const nextMatch = data && !deletedMatchIds.has(String(data.id)) && !deletedMatchIds.has(String(data.api_id))
+          ? data
+          : localMatch && !deletedMatchIds.has(String(localMatch.id)) && !deletedMatchIds.has(String(localMatch.api_id))
+            ? localMatch
+            : null
 
-      setMatch(nextMatch)
-      setLoading(false)
+        setMatch(nextMatch)
+      } catch {
+        if (!isSupabaseConfigured) {
+          const localMatch = getLocalMatchById(matchId)
+          setMatch(localMatch)
+        } else {
+          setMatch(null)
+        }
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchMatch()

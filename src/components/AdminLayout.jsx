@@ -13,26 +13,42 @@ export function AdminLayout({ children }) {
   useEffect(() => {
     let mounted = true
 
-    async function loadSession() {
+  async function loadSession() {
+      try {
+        if (!allowedAdminEmail) {
+          if (mounted) {
+            setError('Defina VITE_ADMIN_EMAIL para habilitar o admin.')
+            setIsAuthenticated(false)
+            setLoading(false)
+          }
+          return
+        }
+
       if (!isSupabaseConfigured) {
         if (mounted) {
           setLoading(false)
         }
-        return
-      }
+          return
+        }
 
-      const { data } = await supabase.auth.getSession()
-      const session = data?.session || null
+        const { data } = await supabase.auth.getSession()
+        const session = data?.session || null
       const sessionEmail = session?.user?.email?.trim().toLowerCase() || ''
 
       if (!mounted) return
 
-      const isAllowed = allowedAdminEmail
-        ? sessionEmail === allowedAdminEmail
-        : Boolean(session)
+      const isAllowed = sessionEmail === allowedAdminEmail
 
       setIsAuthenticated(isAllowed)
-      setLoading(false)
+      } catch {
+        if (mounted) {
+          setIsAuthenticated(false)
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
     }
 
     loadSession()
@@ -61,6 +77,12 @@ export function AdminLayout({ children }) {
       return
     }
 
+    if (!allowedAdminEmail) {
+      setError('Defina VITE_ADMIN_EMAIL antes de entrar no painel.')
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     setError('')
 
@@ -76,9 +98,7 @@ export function AdminLayout({ children }) {
     }
 
     const sessionEmail = data?.user?.email?.trim().toLowerCase() || data?.session?.user?.email?.trim().toLowerCase() || ''
-    const isAllowed = allowedAdminEmail
-      ? sessionEmail === allowedAdminEmail
-      : Boolean(data?.session)
+    const isAllowed = sessionEmail === allowedAdminEmail
 
     if (!isAllowed) {
       await supabase.auth.signOut()

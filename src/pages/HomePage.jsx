@@ -13,39 +13,52 @@ export default function HomePage() {
 
   useEffect(() => {
     async function fetchData() {
-      await syncBrazilMatches()
-      const deletedMatchIds = new Set(getDeletedMatchIds().map(String))
-      const sortByRecent = (a, b) => new Date(b.match_date) - new Date(a.match_date)
+      try {
+        await syncBrazilMatches()
+        const deletedMatchIds = new Set(getDeletedMatchIds().map(String))
+        const sortByRecent = (a, b) => new Date(b.match_date) - new Date(a.match_date)
 
-      const { data: matches } = await supabase
-        .from('matches')
-        .select('*')
-        .order('match_date', { ascending: false })
+        const { data: matches } = await supabase
+          .from('matches')
+          .select('*')
+          .order('match_date', { ascending: false })
 
-      const visibleMatches = isSupabaseConfigured
-        ? (matches || [])
-        : getLocalMatches()
-        .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
+        const visibleMatches = isSupabaseConfigured
+          ? (matches || [])
+          : getLocalMatches()
+            .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
 
-      if (visibleMatches.length > 0) {
-        const latestFinishedMatch = [...visibleMatches]
-          .filter(match => match.is_finished)
-          .sort(sortByRecent)[0]
-        const latestOpenMatch = [...visibleMatches]
-          .filter(match => !match.is_finished)
-          .sort(sortByRecent)[0]
-        setNextMatch(latestFinishedMatch || [...visibleMatches].sort(sortByRecent)[0])
-        setOpenMatch(latestOpenMatch || null)
-      } else {
-        const localMatches = isSupabaseConfigured
-          ? []
-          : getLocalMatches().filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
-        const latestLocalMatch = [...localMatches].sort(sortByRecent)[0] || null
-        setNextMatch(latestLocalMatch)
-        setOpenMatch([...localMatches].filter(match => !match.is_finished).sort(sortByRecent)[0] || null)
+        if (visibleMatches.length > 0) {
+          const latestFinishedMatch = [...visibleMatches]
+            .filter(match => match.is_finished)
+            .sort(sortByRecent)[0]
+          const latestOpenMatch = [...visibleMatches]
+            .filter(match => !match.is_finished)
+            .sort(sortByRecent)[0]
+          setNextMatch(latestFinishedMatch || [...visibleMatches].sort(sortByRecent)[0])
+          setOpenMatch(latestOpenMatch || null)
+        } else {
+          const localMatches = isSupabaseConfigured
+            ? []
+            : getLocalMatches().filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
+          const latestLocalMatch = [...localMatches].sort(sortByRecent)[0] || null
+          setNextMatch(latestLocalMatch)
+          setOpenMatch([...localMatches].filter(match => !match.is_finished).sort(sortByRecent)[0] || null)
+        }
+      } catch {
+        if (!isSupabaseConfigured) {
+          const localMatches = getLocalMatches()
+          const sortByRecent = (a, b) => new Date(b.match_date) - new Date(a.match_date)
+          const latestLocalMatch = [...localMatches].sort(sortByRecent)[0] || null
+          setNextMatch(latestLocalMatch)
+          setOpenMatch([...localMatches].filter(match => !match.is_finished).sort(sortByRecent)[0] || null)
+        } else {
+          setNextMatch(null)
+          setOpenMatch(null)
+        }
+      } finally {
+        setLoading(false)
       }
-
-      setLoading(false)
     }
 
     fetchData()

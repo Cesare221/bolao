@@ -18,24 +18,28 @@ function getOpponentAndScore(fixture) {
   }
 }
 
-function calculatePoints(brazilScore, opponentScore, actualBrazilScore, actualOpponentScore) {
+function calculatePredictionBreakdown(prediction, actualBrazilScore, actualOpponentScore) {
   if (actualBrazilScore === null || actualOpponentScore === null) {
-    return 0
+    return {
+      points: 0,
+      exactScore: 0,
+      correctOutcome: 0
+    }
   }
 
-  if (brazilScore === actualBrazilScore && opponentScore === actualOpponentScore) {
-    return 1
+  const exactScore = prediction.brazil_score === actualBrazilScore && prediction.opponent_score === actualOpponentScore ? 1 : 0
+  const correctOutcome = Math.sign(prediction.brazil_score - prediction.opponent_score) === Math.sign(actualBrazilScore - actualOpponentScore) ? 1 : 0
+
+  return {
+    points: exactScore || correctOutcome ? 1 : 0,
+    exactScore,
+    correctOutcome
   }
-
-  const predictedOutcome = Math.sign(brazilScore - opponentScore)
-  const actualOutcome = Math.sign(actualBrazilScore - actualOpponentScore)
-
-  return predictedOutcome === actualOutcome ? 1 : 0
 }
 
 exports.handler = async () => {
   const supabaseUrl = process.env.SUPABASE_URL
-  const supabaseKey = process.env.SUPABASE_ANON_KEY
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   const apiKey = process.env.API_FOOTBALL_KEY
 
   if (!supabaseUrl || !supabaseKey) {
@@ -104,17 +108,12 @@ exports.handler = async () => {
 
     for (const match of finishedMatches || []) {
       for (const prediction of match.predictions || []) {
-        const points = calculatePoints(
-          prediction.brazil_score,
-          prediction.opponent_score,
-          match.brazil_score,
-          match.opponent_score
-        )
+        const breakdown = calculatePredictionBreakdown(prediction, match.brazil_score, match.opponent_score)
 
-        if (prediction.points !== points) {
+        if (prediction.points !== breakdown.points) {
           await supabase
             .from('predictions')
-            .update({ points })
+            .update({ points: breakdown.points })
             .eq('id', prediction.id)
         }
       }
@@ -129,16 +128,27 @@ exports.handler = async () => {
     }
 
     for (const participant of participants || []) {
-      const totalPoints = (participant.predictions || []).reduce((sum, prediction) => sum + (prediction.points || 0), 0)
-      const correctPredictions = (participant.predictions || []).filter(prediction => prediction.points === 1).length
+      const predictionStats = (participant.predictions || []).reduce((sum, prediction) => {
+        const breakdown = calculatePredictionBreakdown(
+          prediction,
+          prediction.matches?.brazil_score ?? prediction.brazil_score ?? null,
+          prediction.matches?.opponent_score ?? prediction.opponent_score ?? null
+        )
+
+        return {
+          totalPoints: sum.totalPoints + breakdown.points,
+          exactScores: sum.exactScores + breakdown.exactScore,
+          correctOutcomes: sum.correctOutcomes + breakdown.correctOutcome
+        }
+      }, { totalPoints: 0, exactScores: 0, correctOutcomes: 0 })
 
       await supabase.from('rankings').upsert({
         participant_id: participant.id,
         participant_name: participant.name,
         sector: participant.sector,
-        total_points: totalPoints,
-        exact_scores: correctPredictions,
-        correct_outcomes: correctPredictions,
+        total_points: predictionStats.totalPoints,
+        exact_scores: predictionStats.exactScores,
+        correct_outcomes: predictionStats.correctOutcomes,
         updated_at: new Date().toISOString()
       })
     }

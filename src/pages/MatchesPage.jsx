@@ -13,27 +13,46 @@ export default function MatchesPage() {
 
   useEffect(() => {
     async function fetchMatches() {
-      await syncBrazilMatches()
-      const deletedMatchIds = new Set(getDeletedMatchIds().map(String))
+      try {
+        await syncBrazilMatches()
+        const deletedMatchIds = new Set(getDeletedMatchIds().map(String))
 
-      const { data } = await supabase
-        .from('matches')
-        .select('*')
-        .order('match_date', { ascending: false })
+        const { data } = await supabase
+          .from('matches')
+          .select('*')
+          .order('match_date', { ascending: false })
 
-      const nextMatches = isSupabaseConfigured
-        ? (data || [])
-        : getLocalMatches()
-        .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
+        const nextMatches = isSupabaseConfigured
+          ? (data || [])
+          : getLocalMatches()
+            .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
 
-      const latestFinishedMatch = [...nextMatches]
-        .filter(match => match.is_finished)
-        .sort((a, b) => new Date(b.match_date) - new Date(a.match_date))[0]
-      const firstOpenMatch = latestFinishedMatch || nextMatches.find(match => !match.is_finished) || nextMatches[0] || null
+        const latestFinishedMatch = [...nextMatches]
+          .filter(match => match.is_finished)
+          .sort((a, b) => new Date(b.match_date) - new Date(a.match_date))[0]
+        const firstOpenMatch = latestFinishedMatch || nextMatches.find(match => !match.is_finished) || nextMatches[0] || null
 
-      setMatches(nextMatches)
-      setSelectedMatchId(firstOpenMatch?.id || null)
-      setLoading(false)
+        setMatches(nextMatches)
+        setSelectedMatchId(firstOpenMatch?.id || null)
+      } catch {
+        if (!isSupabaseConfigured) {
+          const deletedMatchIds = new Set(getDeletedMatchIds().map(String))
+          const nextMatches = getLocalMatches()
+            .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
+          const latestFinishedMatch = [...nextMatches]
+            .filter(match => match.is_finished)
+            .sort((a, b) => new Date(b.match_date) - new Date(a.match_date))[0]
+          const firstOpenMatch = latestFinishedMatch || nextMatches.find(match => !match.is_finished) || nextMatches[0] || null
+
+          setMatches(nextMatches)
+          setSelectedMatchId(firstOpenMatch?.id || null)
+        } else {
+          setMatches([])
+          setSelectedMatchId(null)
+        }
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchMatches()

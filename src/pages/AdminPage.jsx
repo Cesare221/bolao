@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react'
+﻿import React, { useEffect, useState } from 'react'
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 import { AdminLayout } from '../components/AdminLayout'
-import { calculatePoints } from '../utils/scoring'
+import { calculatePredictionBreakdown } from '../utils/scoring'
 import { syncBrazilMatches } from '../services/matchSync'
 import { addLocalMatch, addLocalParticipant, deleteLocalMatch, ensureLocalSeed, recalculateLocalRankings, saveLocalMatchScore, saveLocalPrediction } from '../services/localStore'
 import { CalendarDays, ClipboardList, PlusCircle, RotateCcw, UserPlus, PenSquare, Trash2 } from 'lucide-react'
@@ -22,31 +22,44 @@ export default function AdminPage() {
 
   async function fetchData() {
     await syncBrazilMatches()
+    try {
+      const { data: matchesData } = await supabase
+        .from('matches')
+        .select('*')
+        .order('match_date', { ascending: false })
 
-    const { data: matchesData } = await supabase
-      .from('matches')
-      .select('*')
-      .order('match_date', { ascending: false })
+      const { data: participantsData } = await supabase
+        .from('participants')
+        .select('id, name, sector, prediction_count')
+        .order('name', { ascending: true })
 
-    const { data: participantsData } = await supabase
-      .from('participants')
-      .select('id, name, sector, prediction_count')
-      .order('name', { ascending: true })
+      const { data: predictionsData } = await supabase
+        .from('predictions')
+        .select('*, participants(name), matches(opponent)')
+        .order('created_at', { ascending: false })
 
-    const { data: predictionsData } = await supabase
-      .from('predictions')
-      .select('*, participants(name), matches(opponent)')
-      .order('created_at', { ascending: false })
+      const localState = ensureLocalSeed()
+      const deletedMatchIds = new Set((localState.deletedMatchIds || []).map(String))
 
-    const localState = ensureLocalSeed()
-    const deletedMatchIds = new Set((localState.deletedMatchIds || []).map(String))
-
-    setMatches(
-      (isSupabaseConfigured ? (matchesData || []) : localState.matches)
-        .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
-    )
-    setParticipants(isSupabaseConfigured ? (participantsData || []) : localState.participants)
-    setPredictions(isSupabaseConfigured ? (predictionsData || []) : localState.predictions)
+      setMatches(
+        (isSupabaseConfigured ? (matchesData || []) : localState.matches)
+          .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
+      )
+      setParticipants(isSupabaseConfigured ? (participantsData || []) : localState.participants)
+      setPredictions(isSupabaseConfigured ? (predictionsData || []) : localState.predictions)
+    } catch {
+      if (!isSupabaseConfigured) {
+        const localState = ensureLocalSeed()
+        const deletedMatchIds = new Set((localState.deletedMatchIds || []).map(String))
+        setMatches(localState.matches.filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id))))
+        setParticipants(localState.participants)
+        setPredictions(localState.predictions)
+      } else {
+        setMatches([])
+        setParticipants([])
+        setPredictions([])
+      }
+    }
   }
 
   useEffect(() => {
@@ -69,13 +82,18 @@ export default function AdminPage() {
         .eq('id', matchId)
 
       if (error) throw error
-    } catch {
-      saveLocalMatchScore(matchId, {
-        brazil_score: parseInt(scores.brazil, 10),
-        opponent_score: parseInt(scores.opponent, 10),
-        is_finished: true,
-        status: 'FT'
-      })
+    } catch (err) {
+      if (!isSupabaseConfigured) {
+        saveLocalMatchScore(matchId, {
+          brazil_score: parseInt(scores.brazil, 10),
+          opponent_score: parseInt(scores.opponent, 10),
+          is_finished: true,
+          status: 'FT'
+        })
+      } else {
+        setStatusMessage(err.message || 'Nao foi possivel atualizar o placar.')
+        return
+      }
     }
 
     setStatusMessage('Placar atualizado!')
@@ -85,10 +103,9 @@ export default function AdminPage() {
 
   async function handleDeleteMatch(matchId) {
     const match = matches.find(item => item.id === matchId)
-    const confirmDelete = window.confirm(`Excluir o jogo "${match ? `Brasil vs ${match.opponent}` : 'selecionado'}"? Esta ação também remove os palpites desse jogo.`)
+    const confirmDelete = window.confirm(`Excluir o jogo "${match ? `Brasil vs ${match.opponent}` : 'selecionado'}"? Esta aÃ§Ã£o tambÃ©m remove os palpites desse jogo.`)
     if (!confirmDelete) return
 
-    let deletedRemotely = false
     try {
       const { error } = await supabase
         .from('matches')
@@ -96,18 +113,22 @@ export default function AdminPage() {
         .eq('id', matchId)
 
       if (error) throw error
-      deletedRemotely = true
-    } catch {
-      // If Supabase is unavailable or locked down, remove it from local fallback too.
+    } catch (err) {
+      if (isSupabaseConfigured) {
+        setStatusMessage(err.message || 'Nao foi possivel excluir o jogo.')
+        return
+      }
     } finally {
-      try {
-        deleteLocalMatch(match || matchId)
-      } catch {
-        // ignore local cleanup errors; fetchData will reconcile what remains
+      if (!isSupabaseConfigured) {
+        try {
+          deleteLocalMatch(match || matchId)
+        } catch {
+          // ignore local cleanup errors; fetchData will reconcile what remains
+        }
       }
     }
 
-    setStatusMessage(deletedRemotely ? 'Jogo excluido!' : 'Jogo excluido localmente!')
+    setStatusMessage('Jogo excluido!')
     setTimeout(() => setStatusMessage(''), 3000)
     setMatches(prev => prev.filter(match => match.id !== matchId))
     setPredictions(prev => prev.filter(prediction => prediction.match_id !== matchId))
@@ -131,15 +152,20 @@ export default function AdminPage() {
 
       if (error) throw error
       setStatusMessage('Jogo criado com sucesso!')
-    } catch {
-      addLocalMatch({
-        opponent: newMatch.opponent,
-        opponent_flag: newMatch.opponent_flag || '',
-        match_date: new Date(newMatch.match_date).toISOString(),
-        status: 'NS',
-        is_finished: false
-      })
-      setStatusMessage('Jogo criado localmente!')
+    } catch (err) {
+      if (!isSupabaseConfigured) {
+        addLocalMatch({
+          opponent: newMatch.opponent,
+          opponent_flag: newMatch.opponent_flag || '',
+          match_date: new Date(newMatch.match_date).toISOString(),
+          status: 'NS',
+          is_finished: false
+        })
+        setStatusMessage('Jogo criado localmente!')
+      } else {
+        setStatusMessage(err.message || 'Nao foi possivel criar o jogo.')
+        return
+      }
     }
 
     setNewMatch({ opponent: '', match_date: '', opponent_flag: '' })
@@ -160,12 +186,17 @@ export default function AdminPage() {
 
       if (error) throw error
       setStatusMessage('Funcionário cadastrado com sucesso!')
-    } catch {
-      try {
-        addLocalParticipant({ name, sector })
-        setStatusMessage('Funcionário cadastrado localmente!')
-      } catch (localError) {
-        setStatusMessage(localError.message)
+    } catch (err) {
+      if (!isSupabaseConfigured) {
+        try {
+          addLocalParticipant({ name, sector })
+          setStatusMessage('Funcionário cadastrado localmente!')
+        } catch (localError) {
+          setStatusMessage(localError.message)
+        }
+      } else {
+        setStatusMessage(err.message || 'Nao foi possivel cadastrar o funcionario.')
+        return
       }
     }
 
@@ -173,7 +204,6 @@ export default function AdminPage() {
     setTimeout(() => setStatusMessage(''), 3000)
     fetchData()
   }
-
   async function handleManualPrediction(e) {
     e.preventDefault()
 
@@ -199,23 +229,27 @@ export default function AdminPage() {
 
       if (error) throw error
       setStatusMessage('Palpite lançado com sucesso!')
-    } catch {
-      saveLocalPrediction({
-        matchId: match.id,
-        name: participant.name,
-        sector: participant.sector,
-        brazilScore: payload.brazil_score,
-        opponentScore: payload.opponent_score
-      })
-      recalculateLocalRankings()
-      setStatusMessage('Palpite lançado localmente!')
+    } catch (err) {
+      if (!isSupabaseConfigured) {
+        saveLocalPrediction({
+          matchId: match.id,
+          name: participant.name,
+          sector: participant.sector,
+          brazilScore: payload.brazil_score,
+          opponentScore: payload.opponent_score
+        })
+        recalculateLocalRankings()
+        setStatusMessage('Palpite lançado localmente!')
+      } else {
+        setStatusMessage(err.message || 'Nao foi possivel lançar o palpite.')
+        return
+      }
     }
 
     setManualPrediction(initialPredictionForm)
     setTimeout(() => setStatusMessage(''), 3000)
     fetchData()
   }
-
   async function handleRecalculate() {
     try {
       const { data: allPredictions } = await supabase
@@ -228,38 +262,56 @@ export default function AdminPage() {
 
       for (const pred of allPredictions) {
         if (pred.matches?.is_finished && pred.matches?.brazil_score !== null) {
-          const points = calculatePoints(pred, pred.matches.brazil_score, pred.matches.opponent_score)
-          await supabase.from('predictions').update({ points }).eq('id', pred.id)
+          const breakdown = calculatePredictionBreakdown(pred, pred.matches.brazil_score, pred.matches.opponent_score)
+          const { error } = await supabase.from('predictions').update({ points: breakdown.points }).eq('id', pred.id)
+          if (error) throw error
         }
       }
 
       const { data: participantsData } = await supabase.from('participants').select('*, predictions(*)')
       if (participantsData) {
         for (const participant of participantsData) {
-          const totalPoints = participant.predictions.reduce((sum, pr) => sum + (pr.points || 0), 0)
-          const correctPredictions = participant.predictions.filter(pr => pr.points === 1).length
+          const stats = participant.predictions.reduce((sum, pr) => {
+            const breakdown = calculatePredictionBreakdown(
+              pr,
+              pr.matches?.brazil_score ?? pr.brazil_score ?? null,
+              pr.matches?.opponent_score ?? pr.opponent_score ?? null
+            )
 
-          await supabase.from('rankings').upsert({
+            return {
+              totalPoints: sum.totalPoints + breakdown.points,
+              exactScores: sum.exactScores + breakdown.exactScore,
+              correctOutcomes: sum.correctOutcomes + breakdown.correctOutcome
+            }
+          }, { totalPoints: 0, exactScores: 0, correctOutcomes: 0 })
+
+          const { error } = await supabase.from('rankings').upsert({
             participant_id: participant.id,
             participant_name: participant.name,
             sector: participant.sector,
-            total_points: totalPoints,
-            exact_scores: correctPredictions,
-            correct_outcomes: correctPredictions,
+            total_points: stats.totalPoints,
+            exact_scores: stats.exactScores,
+            correct_outcomes: stats.correctOutcomes,
             updated_at: new Date().toISOString()
           })
+
+          if (error) throw error
         }
       }
       setStatusMessage('Ranking recalculado!')
-    } catch {
-      recalculateLocalRankings()
-      setStatusMessage('Ranking recalculado localmente!')
+    } catch (err) {
+      if (!isSupabaseConfigured) {
+        recalculateLocalRankings()
+        setStatusMessage('Ranking recalculado localmente!')
+      } else {
+        setStatusMessage(err.message || 'Nao foi possivel recalcular o ranking.')
+        return
+      }
     }
 
     setTimeout(() => setStatusMessage(''), 3000)
     fetchData()
   }
-
   function setMatchScore(matchId, field, value) {
     setEditScores(prev => ({
       ...prev,
@@ -371,7 +423,7 @@ export default function AdminPage() {
             </div>
 
             <div className="admin-subsection">
-              <h3 className="subsection-title">Novo Funcionário</h3>
+              <h3 className="subsection-title">Novo FuncionÃ¡rio</h3>
               <form onSubmit={handleCreateParticipant} className="create-match-form">
                 <div className="form-group">
                   <label>Nome</label>
@@ -389,18 +441,18 @@ export default function AdminPage() {
                     type="text"
                     value={newParticipant.sector}
                     onChange={(e) => setNewParticipant({ ...newParticipant, sector: e.target.value })}
-                    placeholder="Ex: Recepção"
+                    placeholder="Ex: RecepÃ§Ã£o"
                   />
                 </div>
-                <button type="submit" className="btn-submit">Cadastrar Funcionário</button>
+                <button type="submit" className="btn-submit">Cadastrar FuncionÃ¡rio</button>
               </form>
             </div>
 
             <div className="admin-subsection">
-              <h3 className="subsection-title"><PenSquare size={16} /> Lançar Palpite Manual</h3>
+              <h3 className="subsection-title"><PenSquare size={16} /> LanÃ§ar Palpite Manual</h3>
               <form onSubmit={handleManualPrediction} className="create-match-form">
                 <div className="form-group">
-                  <label>Funcionário</label>
+                  <label>FuncionÃ¡rio</label>
                   <select
                     value={manualPrediction.participantId}
                     onChange={(e) => setManualPrediction({ ...manualPrediction, participantId: e.target.value })}
@@ -444,7 +496,7 @@ export default function AdminPage() {
                   </div>
                   <span className="vs-label">x</span>
                   <div className="form-group">
-                    <label>Adversário</label>
+                    <label>AdversÃ¡rio</label>
                     <input
                       type="number"
                       min="0"
@@ -478,7 +530,7 @@ export default function AdminPage() {
                     type="text"
                     value={newMatch.opponent_flag}
                     onChange={(e) => setNewMatch({ ...newMatch, opponent_flag: e.target.value })}
-                    placeholder="Ex: 🇦🇷"
+                    placeholder="Ex: ðŸ‡¦ðŸ‡·"
                   />
                 </div>
                 <div className="form-group">
@@ -504,3 +556,7 @@ export default function AdminPage() {
     </AdminLayout>
   )
 }
+
+
+
+

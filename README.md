@@ -40,7 +40,7 @@ VITE_ADMIN_EMAIL=admin@seu-dominio.com
 
 **Importante:** No Netlify, configure as mesmas variaveis no painel:
 - `VITE_...` vai para o frontend
-- `SUPABASE_URL` e `SUPABASE_ANON_KEY` ficam para as Netlify Functions
+- `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` ficam para as Netlify Functions
 - `API_FOOTBALL_KEY` e opcional, se voce quiser a sincronizacao externa
 - `VITE_ADMIN_EMAIL` deve ser o email do usuario admin cadastrado no Supabase Auth
 - Painel: `Site Settings > Build & Deploy > Environment Variables`
@@ -109,7 +109,7 @@ npx netlify deploy --prod
 - Lista completa de jogos do Brasil na Copa
 - Envio de palpites (maximo 2 por pessoa)
 - Ranking com pontuacao
-- Painel admin protegido por senha
+- Painel admin protegido por login real no Supabase Auth
 - Atualizacao automatica dos jogos do Brasil quando a API estiver configurada
 - Fallback local para testes quando o Supabase estiver vazio ou bloqueado
 

@@ -26,19 +26,30 @@ export default function RankingPage() {
 
   useEffect(() => {
     async function fetchRankings() {
-      await syncBrazilMatches()
+      try {
+        await syncBrazilMatches()
 
-      const { data } = await supabase
-        .from('rankings')
-        .select('*')
-        .order('total_points', { ascending: false })
+        const { data } = await supabase
+          .from('rankings')
+          .select('*')
+          .order('total_points', { ascending: false })
 
-      const rankingRows = isSupabaseConfigured
-        ? (data || [])
-        : getLocalRankings()
-        .filter(row => !isExcludedParticipantName(row.participant_name))
-      setRankings(sortRankings(rankingRows))
-      setLoading(false)
+        const rankingRows = isSupabaseConfigured
+          ? (data || [])
+          : getLocalRankings()
+            .filter(row => !isExcludedParticipantName(row.participant_name))
+        setRankings(sortRankings(rankingRows))
+      } catch {
+        if (!isSupabaseConfigured) {
+          const rankingRows = getLocalRankings()
+            .filter(row => !isExcludedParticipantName(row.participant_name))
+          setRankings(sortRankings(rankingRows))
+        } else {
+          setRankings([])
+        }
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchRankings()

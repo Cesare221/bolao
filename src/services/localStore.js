@@ -1,4 +1,4 @@
-import { calculatePoints } from '../utils/scoring'
+import { calculatePredictionBreakdown } from '../utils/scoring'
 import { brazilCupMatches, brazilCupParticipants, brazilCupRankings } from '../data/brazilCupData'
 import { isExcludedParticipantName } from '../data/excludedParticipants'
 
@@ -168,13 +168,13 @@ export function recalculateLocalRankings() {
       continue
     }
 
-    const points = calculatePoints(
+    const breakdown = calculatePredictionBreakdown(
       prediction,
       match.brazil_score,
       match.opponent_score
     )
 
-    prediction.points = points
+    prediction.points = breakdown.points
 
     const participant = getParticipantByIdFromState(state, prediction.participant_id)
     if (!participant) continue
@@ -188,9 +188,9 @@ export function recalculateLocalRankings() {
       correct_outcomes: 0
     }
 
-    currentRanking.total_points += points
-    currentRanking.exact_scores += points
-    currentRanking.correct_outcomes += points
+    currentRanking.total_points += breakdown.points
+    currentRanking.exact_scores += breakdown.exactScore
+    currentRanking.correct_outcomes += breakdown.correctOutcome
     rankingAccumulator.set(participant.id, currentRanking)
   }
 
