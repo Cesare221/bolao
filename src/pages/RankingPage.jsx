@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 import { RankingTable } from '../components/RankingTable'
 import { syncBrazilMatches } from '../services/matchSync'
 import { getLocalRankings } from '../services/localStore'
@@ -33,7 +33,9 @@ export default function RankingPage() {
         .select('*')
         .order('total_points', { ascending: false })
 
-      const rankingRows = (data && data.length > 0 ? data : getLocalRankings())
+      const rankingRows = isSupabaseConfigured
+        ? (data || [])
+        : getLocalRankings()
         .filter(row => !isExcludedParticipantName(row.participant_name))
       setRankings(sortRankings(rankingRows))
       setLoading(false)

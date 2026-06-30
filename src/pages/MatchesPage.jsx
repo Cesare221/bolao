@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../lib/supabaseClient'
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 import { MatchCard } from '../components/MatchCard'
 import { syncBrazilMatches } from '../services/matchSync'
 import { getDeletedMatchIds, getLocalMatches } from '../services/localStore'
@@ -21,7 +21,9 @@ export default function MatchesPage() {
         .select('*')
         .order('match_date', { ascending: false })
 
-      const nextMatches = (data && data.length > 0 ? data : getLocalMatches())
+      const nextMatches = isSupabaseConfigured
+        ? (data || [])
+        : getLocalMatches()
         .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
 
       const latestFinishedMatch = [...nextMatches]

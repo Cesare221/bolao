@@ -1,19 +1,20 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useParams, useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabaseClient'
+import { Link, useParams } from 'react-router-dom'
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 import { isBeforeMatch } from '../utils/dateHelpers'
 import { PredictionForm } from '../components/PredictionForm'
 import { MatchCard } from '../components/MatchCard'
+import { MatchPredictionsList } from '../components/MatchPredictionsList'
 import { syncBrazilMatches } from '../services/matchSync'
 import { getDeletedMatchIds, getLocalMatchById } from '../services/localStore'
 import { ArrowLeft, ShieldAlert } from 'lucide-react'
 
 export default function PredictionPage() {
   const { matchId } = useParams()
-  const navigate = useNavigate()
   const [match, setMatch] = useState(null)
   const [loading, setLoading] = useState(true)
   const [prediction, setPrediction] = useState(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     async function fetchMatch() {
@@ -26,7 +27,7 @@ export default function PredictionPage() {
         .eq('id', matchId)
         .single()
 
-      const localMatch = getLocalMatchById(matchId)
+      const localMatch = isSupabaseConfigured ? null : getLocalMatchById(matchId)
       const nextMatch = data && !deletedMatchIds.has(String(data.id)) && !deletedMatchIds.has(String(data.api_id))
         ? data
         : localMatch && !deletedMatchIds.has(String(localMatch.id)) && !deletedMatchIds.has(String(localMatch.api_id))
@@ -56,12 +57,13 @@ export default function PredictionPage() {
       </div>
       <MatchCard match={match} prediction={prediction} />
       {canPredict ? (
-        <PredictionForm match={match} onSuccess={() => navigate('/ranking')} />
+        <PredictionForm match={match} onSuccess={() => setRefreshKey(value => value + 1)} />
       ) : (
         <div className="closed-message">
           <p>Palpites encerrados para este jogo!</p>
         </div>
       )}
+      <MatchPredictionsList key={refreshKey} matchId={match.id} />
       <Link to="/jogos" className="btn-link-back">
         <ArrowLeft size={16} />
         Voltar aos jogos

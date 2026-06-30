@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const mockSession = { data: { session: null }, error: null }
 
 function createMockQuery() {
   const emptyResult = Promise.resolve({ data: [], error: null })
@@ -29,7 +30,19 @@ function createMockQuery() {
 
 function createMockSupabase() {
   return {
-    from: () => createMockQuery()
+    from: () => createMockQuery(),
+    auth: {
+      getSession: async () => mockSession,
+      signInWithPassword: async () => ({ data: { session: null, user: null }, error: new Error('Supabase nao configurado') }),
+      signOut: async () => ({ error: null }),
+      onAuthStateChange: () => ({
+        data: {
+          subscription: {
+            unsubscribe() {}
+          }
+        }
+      })
+    }
   }
 }
 

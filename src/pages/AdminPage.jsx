@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 import { AdminLayout } from '../components/AdminLayout'
 import { calculatePoints } from '../utils/scoring'
 import { syncBrazilMatches } from '../services/matchSync'
@@ -42,11 +42,11 @@ export default function AdminPage() {
     const deletedMatchIds = new Set((localState.deletedMatchIds || []).map(String))
 
     setMatches(
-      (matchesData && matchesData.length > 0 ? matchesData : localState.matches)
+      (isSupabaseConfigured ? (matchesData || []) : localState.matches)
         .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
     )
-    setParticipants(participantsData && participantsData.length > 0 ? participantsData : localState.participants)
-    setPredictions(predictionsData && predictionsData.length > 0 ? predictionsData : localState.predictions)
+    setParticipants(isSupabaseConfigured ? (participantsData || []) : localState.participants)
+    setPredictions(isSupabaseConfigured ? (predictionsData || []) : localState.predictions)
   }
 
   useEffect(() => {

@@ -35,14 +35,21 @@ Crie um arquivo `.env` na raiz do projeto:
 ```env
 VITE_SUPABASE_URL=https://seu-projeto.supabase.co
 VITE_SUPABASE_ANON_KEY=sua-chave-anonima
-VITE_ADMIN_PASSWORD=senha-do-admin
+VITE_ADMIN_EMAIL=admin@seu-dominio.com
 ```
 
 **Importante:** No Netlify, configure as mesmas variaveis no painel:
 - `VITE_...` vai para o frontend
 - `SUPABASE_URL` e `SUPABASE_ANON_KEY` ficam para as Netlify Functions
 - `API_FOOTBALL_KEY` e opcional, se voce quiser a sincronizacao externa
+- `VITE_ADMIN_EMAIL` deve ser o email do usuario admin cadastrado no Supabase Auth
 - Painel: `Site Settings > Build & Deploy > Environment Variables`
+
+Depois de criar o usuario no Supabase Auth, insira o email dele na tabela `admin_users`:
+
+```sql
+insert into admin_users (email) values ('admin@seu-dominio.com');
+```
 
 ## Roadmap Para Acessar o Site
 
@@ -54,9 +61,10 @@ Se voce quer ir direto ao ponto, siga este roteiro:
 4. Executar `supabase/migrations/001_initial_schema.sql`
 5. Executar `supabase/migrations/002_public_access_policies.sql`
 6. Executar `supabase/seed.sql`
-7. Rodar `npm run dev` para testar localmente
-8. Fazer deploy no Netlify
-9. Abrir a URL gerada pelo Netlify
+7. Executar `supabase/migrations/004_admin_auth_policies.sql`
+8. Rodar `npm run dev` para testar localmente
+9. Fazer deploy no Netlify
+10. Abrir a URL gerada pelo Netlify
 
 O passo a passo completo esta em [`ROADMAP_ACESSO.md`](./ROADMAP_ACESSO.md).
 
@@ -68,6 +76,8 @@ Execute o migration script no SQL Editor do Supabase:
 2. Va para SQL Editor
 3. Cole o conteudo de `supabase/migrations/001_initial_schema.sql`
 4. Execute
+
+Depois, rode também `supabase/migrations/004_admin_auth_policies.sql` para proteger as alteracoes administrativas com o email autorizado.
 
 ## Desenvolvimento Local
 

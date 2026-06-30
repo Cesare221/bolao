@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../lib/supabaseClient'
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 import { MatchCard } from '../components/MatchCard'
 import { syncBrazilMatches } from '../services/matchSync'
 import { getDeletedMatchIds, getLocalMatches } from '../services/localStore'
@@ -22,7 +22,9 @@ export default function HomePage() {
         .select('*')
         .order('match_date', { ascending: false })
 
-      const visibleMatches = (matches && matches.length > 0 ? matches : getLocalMatches())
+      const visibleMatches = isSupabaseConfigured
+        ? (matches || [])
+        : getLocalMatches()
         .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
 
       if (visibleMatches.length > 0) {
@@ -35,7 +37,9 @@ export default function HomePage() {
         setNextMatch(latestFinishedMatch || [...visibleMatches].sort(sortByRecent)[0])
         setOpenMatch(latestOpenMatch || null)
       } else {
-        const localMatches = getLocalMatches().filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
+        const localMatches = isSupabaseConfigured
+          ? []
+          : getLocalMatches().filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
         const latestLocalMatch = [...localMatches].sort(sortByRecent)[0] || null
         setNextMatch(latestLocalMatch)
         setOpenMatch([...localMatches].filter(match => !match.is_finished).sort(sortByRecent)[0] || null)

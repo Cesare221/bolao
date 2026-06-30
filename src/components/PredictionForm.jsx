@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 import { saveLocalPrediction } from '../services/localStore'
 import { Send, User, Users } from 'lucide-react'
 
@@ -77,19 +77,23 @@ export function PredictionForm({ match, onSuccess }) {
       setSuccess(true)
       setTimeout(() => onSuccess(), 2000)
     } catch (err) {
-      try {
-        saveLocalPrediction({
-          matchId: match.id,
-          name: normalizedName,
-          sector: normalizedSector,
-          brazilScore: parseInt(brazilScore, 10),
-          opponentScore: parseInt(opponentScore, 10)
-        })
-        setSuccess(true)
-        setTimeout(() => onSuccess(), 1000)
-        return
-      } catch (fallbackError) {
-        setError(fallbackError.message || err.message)
+      if (match.id.startsWith('local-') || !isSupabaseConfigured) {
+        try {
+          saveLocalPrediction({
+            matchId: match.id,
+            name: normalizedName,
+            sector: normalizedSector,
+            brazilScore: parseInt(brazilScore, 10),
+            opponentScore: parseInt(opponentScore, 10)
+          })
+          setSuccess(true)
+          setTimeout(() => onSuccess(), 1000)
+          return
+        } catch (fallbackError) {
+          setError(fallbackError.message || err.message)
+        }
+      } else {
+        setError(err.message || 'Nao foi possivel enviar seu palpite agora.')
       }
     } finally {
       setLoading(false)
@@ -100,7 +104,7 @@ export function PredictionForm({ match, onSuccess }) {
     return (
       <div className="prediction-form">
         <div className="success-message">
-          Palpite enviado com sucesso!
+          Palpite registrado com sucesso!
         </div>
       </div>
     )

@@ -1152,6 +1152,38 @@ button, input, select, textarea {
   font-size: 0.84rem;
 }
 
+.prediction-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.prediction-row-main strong {
+  font-weight: 900;
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prediction-row-main span,
+.prediction-row-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.prediction-row-score {
+  font-size: 0.98rem;
+  font-weight: 900;
+  color: var(--green-900);
+}
+
 .pred-participant {
   font-weight: 900;
   min-width: 0;

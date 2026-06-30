@@ -8,18 +8,20 @@ async function insertMissingMatches() {
     .select('api_id')
 
   if (error) {
-    return false
-  }
-
-  if ((existingMatches || []).length > 0) {
-    return false
+    throw error
   }
 
   const existingApiIds = new Set((existingMatches || []).map(match => match.api_id))
   const missingMatches = brazilCupMatches.filter(match => !existingApiIds.has(match.api_id))
 
   if (missingMatches.length > 0) {
-    await supabase.from('matches').insert(missingMatches)
+    const { error: insertError } = await supabase
+      .from('matches')
+      .upsert(missingMatches, { onConflict: 'api_id' })
+
+    if (insertError) {
+      throw insertError
+    }
   }
 
   return missingMatches.length > 0
@@ -31,27 +33,30 @@ async function insertMissingParticipants() {
     .select('name')
 
   if (error) {
-    return []
-  }
-
-  if ((existingParticipants || []).length > 0) {
-    return (await supabase
-      .from('participants')
-      .select('id, name, sector'))?.data || []
+    throw error
   }
 
   const existingNames = new Set((existingParticipants || []).map(participant => participant.name.toLowerCase()))
   const missingParticipants = brazilCupParticipants.filter(participant => !existingNames.has(participant.name.toLowerCase()))
 
   if (missingParticipants.length > 0) {
-    await supabase.from('participants').insert(missingParticipants)
+    const { error: insertError } = await supabase
+      .from('participants')
+      .insert(missingParticipants)
+
+    if (insertError) {
+      throw insertError
+    }
   }
 
   const { data: participants } = await supabase
     .from('participants')
     .select('id, name, sector')
 
-  return participants || []
+  return {
+    participants: participants || [],
+    seeded: missingParticipants.length > 0
+  }
 }
 
 async function insertMissingRankings(participants) {
@@ -60,11 +65,7 @@ async function insertMissingRankings(participants) {
     .select('participant_id')
 
   if (error) {
-    return false
-  }
-
-  if ((existingRankings || []).length > 0) {
-    return false
+    throw error
   }
 
   const participantByName = new Map(participants.map(participant => [participant.name.toLowerCase(), participant]))
@@ -86,15 +87,17 @@ async function insertMissingRankings(participants) {
     .filter(Boolean)
 
   if (rankingsToInsert.length > 0) {
-    const { data: existingRankings } = await supabase
-      .from('rankings')
-      .select('participant_id')
-
     const existingIds = new Set((existingRankings || []).map(ranking => ranking.participant_id))
     const missingRankings = rankingsToInsert.filter(ranking => !existingIds.has(ranking.participant_id))
 
     if (missingRankings.length > 0) {
-      await supabase.from('rankings').insert(missingRankings)
+      const { error: insertError } = await supabase
+        .from('rankings')
+        .insert(missingRankings)
+
+      if (insertError) {
+        throw insertError
+      }
     }
   }
 
@@ -108,8 +111,9 @@ export async function syncBrazilMatches() {
     return false
   }
 
-  // The browser should not try to seed Supabase directly.
-  // Read paths already fall back to the local dataset, and writes are handled
-  // by the admin flow or trusted backend jobs.
-  return false
+  const matchesSeeded = await insertMissingMatches()
+  const { participants, seeded: participantsSeeded } = await insertMissingParticipants()
+  const rankingsSeeded = await insertMissingRankings(participants)
+
+  return matchesSeeded || participantsSeeded || rankingsSeeded
 }

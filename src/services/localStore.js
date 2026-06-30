@@ -208,6 +208,26 @@ export function getLocalRankings() {
   return ensureLocalSeed().rankings
 }
 
+export function getLocalPredictionsByMatchId(matchId) {
+  const state = ensureLocalSeed()
+
+  return state.predictions
+    .filter(prediction => String(prediction.match_id) === String(matchId))
+    .map(prediction => {
+      const participant = getParticipantByIdFromState(state, prediction.participant_id)
+
+      return {
+        ...prediction,
+        participants: participant
+          ? {
+              name: participant.name,
+              sector: participant.sector
+            }
+          : null
+      }
+    })
+}
+
 export function getLocalMatchById(matchId) {
   const state = ensureLocalSeed()
   if (state.deletedMatchIds.includes(String(matchId))) {
