@@ -24,7 +24,10 @@ export default function MatchesPage() {
       const nextMatches = (data && data.length > 0 ? data : getLocalMatches())
         .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
 
-      const firstOpenMatch = nextMatches.find(match => !match.is_finished) || nextMatches[0] || null
+      const latestFinishedMatch = [...nextMatches]
+        .filter(match => match.is_finished)
+        .sort((a, b) => new Date(b.match_date) - new Date(a.match_date))[0]
+      const firstOpenMatch = latestFinishedMatch || nextMatches.find(match => !match.is_finished) || nextMatches[0] || null
 
       setMatches(nextMatches)
       setSelectedMatchId(firstOpenMatch?.id || null)

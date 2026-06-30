@@ -14,23 +14,25 @@ export default function HomePage() {
     async function fetchData() {
       await syncBrazilMatches()
       const deletedMatchIds = new Set(getDeletedMatchIds().map(String))
+      const sortByRecent = (a, b) => new Date(b.match_date) - new Date(a.match_date)
 
       const { data: matches } = await supabase
         .from('matches')
         .select('*')
-        .order('match_date', { ascending: true })
-        .gte('match_date', new Date().toISOString())
-        .limit(1)
+        .order('match_date', { ascending: false })
 
       const visibleMatches = (matches && matches.length > 0 ? matches : getLocalMatches())
         .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
 
       if (visibleMatches.length > 0) {
-        setNextMatch(visibleMatches[0])
+        const latestFinishedMatch = [...visibleMatches]
+          .filter(match => match.is_finished)
+          .sort(sortByRecent)[0]
+        setNextMatch(latestFinishedMatch || [...visibleMatches].sort(sortByRecent)[0])
       } else {
         const localMatches = getLocalMatches().filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
-        const nextLocalMatch = localMatches.find(match => new Date(match.match_date) >= new Date()) || localMatches[0] || null
-        setNextMatch(nextLocalMatch)
+        const latestLocalMatch = [...localMatches].sort(sortByRecent)[0] || null
+        setNextMatch(latestLocalMatch)
       }
 
       setLoading(false)
@@ -61,14 +63,21 @@ export default function HomePage() {
         ) : nextMatch ? (
           <section className="next-match-section">
             <div className="section-heading">
-              <h2 className="section-title">Próximo Jogo</h2>
+              <h2 className="section-title">Último Jogo</h2>
               <span className="section-kicker">Atualizado automaticamente</span>
             </div>
             <MatchCard match={nextMatch} />
-            <Link to={`/palpite/${nextMatch.id}`} className="btn-primary">
-              <span>Enviar meu palpite</span>
-              <ArrowRight size={18} />
-            </Link>
+            {nextMatch.is_finished ? (
+              <Link to="/jogos" className="btn-primary">
+                <span>Ver jogos</span>
+                <ArrowRight size={18} />
+              </Link>
+            ) : (
+              <Link to={`/palpite/${nextMatch.id}`} className="btn-primary">
+                <span>Enviar meu palpite</span>
+                <ArrowRight size={18} />
+              </Link>
+            )}
           </section>
         ) : (
           <section className="next-match-section">
