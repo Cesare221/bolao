@@ -26,7 +26,7 @@ export default function AdminPage() {
     const { data: matchesData } = await supabase
       .from('matches')
       .select('*')
-      .order('match_date', { ascending: true })
+      .order('match_date', { ascending: false })
 
     const { data: participantsData } = await supabase
       .from('participants')

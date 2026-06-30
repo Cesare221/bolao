@@ -19,7 +19,7 @@ export default function MatchesPage() {
       const { data } = await supabase
         .from('matches')
         .select('*')
-        .order('match_date', { ascending: true })
+        .order('match_date', { ascending: false })
 
       const nextMatches = (data && data.length > 0 ? data : getLocalMatches())
         .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
