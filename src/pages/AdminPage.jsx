@@ -137,10 +137,9 @@ export default function AdminPage() {
         opponent_flag: newMatch.opponent_flag || '',
         match_date: new Date(newMatch.match_date).toISOString(),
         status: 'NS',
-        is_finished: false,
-        is_test: true
+        is_finished: false
       })
-      setStatusMessage('Jogo criado localmente para teste!')
+      setStatusMessage('Jogo criado localmente!')
     }
 
     setNewMatch({ opponent: '', match_date: '', opponent_flag: '' })
