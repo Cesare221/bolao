@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { MatchCard } from '../components/MatchCard'
 import { syncBrazilMatches } from '../services/matchSync'
-import { getLocalMatches } from '../services/localStore'
+import { getDeletedMatchIds, getLocalMatches } from '../services/localStore'
 import { ArrowRight, CalendarDays, Sparkles, Trophy } from 'lucide-react'
 
 export default function HomePage() {
@@ -13,6 +13,7 @@ export default function HomePage() {
   useEffect(() => {
     async function fetchData() {
       await syncBrazilMatches()
+      const deletedMatchIds = new Set(getDeletedMatchIds().map(String))
 
       const { data: matches } = await supabase
         .from('matches')
@@ -21,10 +22,13 @@ export default function HomePage() {
         .gte('match_date', new Date().toISOString())
         .limit(1)
 
-      if (matches && matches.length > 0) {
-        setNextMatch(matches[0])
+      const visibleMatches = (matches && matches.length > 0 ? matches : getLocalMatches())
+        .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
+
+      if (visibleMatches.length > 0) {
+        setNextMatch(visibleMatches[0])
       } else {
-        const localMatches = getLocalMatches()
+        const localMatches = getLocalMatches().filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
         const nextLocalMatch = localMatches.find(match => new Date(match.match_date) >= new Date()) || localMatches[0] || null
         setNextMatch(nextLocalMatch)
       }

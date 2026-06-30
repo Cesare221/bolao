@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { MatchCard } from '../components/MatchCard'
 import { syncBrazilMatches } from '../services/matchSync'
-import { getLocalMatches } from '../services/localStore'
+import { getDeletedMatchIds, getLocalMatches } from '../services/localStore'
 import { CalendarDays, RefreshCw } from 'lucide-react'
 
 export default function MatchesPage() {
@@ -14,13 +14,15 @@ export default function MatchesPage() {
   useEffect(() => {
     async function fetchMatches() {
       await syncBrazilMatches()
+      const deletedMatchIds = new Set(getDeletedMatchIds().map(String))
 
       const { data } = await supabase
         .from('matches')
         .select('*')
         .order('match_date', { ascending: true })
 
-      const nextMatches = data && data.length > 0 ? data : getLocalMatches()
+      const nextMatches = (data && data.length > 0 ? data : getLocalMatches())
+        .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
       setMatches(nextMatches)
       setSelectedMatchId(nextMatches[0]?.id || null)
       setLoading(false)

@@ -76,7 +76,8 @@ function buildDefaultState() {
       ...ranking,
       participant_id: createParticipantId(ranking.participant_name)
       })),
-    predictions: []
+    predictions: [],
+    deletedMatchIds: []
   }
 }
 
@@ -116,7 +117,8 @@ export function ensureLocalSeed() {
       rankings: parsed.rankings?.length
         ? parsed.rankings.filter(ranking => !isExcludedParticipantName(ranking.participant_name))
         : defaults.rankings,
-      predictions: parsed.predictions || []
+      predictions: parsed.predictions || [],
+      deletedMatchIds: parsed.deletedMatchIds || []
     }
 
     return persistState(merged)
@@ -198,7 +200,8 @@ export function recalculateLocalRankings() {
 }
 
 export function getLocalMatches() {
-  return ensureLocalSeed().matches
+  const state = ensureLocalSeed()
+  return state.matches.filter(match => !state.deletedMatchIds.includes(String(match.id)))
 }
 
 export function getLocalRankings() {
@@ -206,7 +209,15 @@ export function getLocalRankings() {
 }
 
 export function getLocalMatchById(matchId) {
-  return getMatchByIdFromState(ensureLocalSeed(), matchId)
+  const state = ensureLocalSeed()
+  if (state.deletedMatchIds.includes(String(matchId))) {
+    return null
+  }
+  return getMatchByIdFromState(state, matchId)
+}
+
+export function getDeletedMatchIds() {
+  return ensureLocalSeed().deletedMatchIds || []
 }
 
 export function saveLocalPrediction({ matchId, name, sector, brazilScore, opponentScore }) {
@@ -375,6 +386,7 @@ export function deleteLocalMatch(matchId) {
   const removedMatch = state.matches[matchIndex]
   state.matches.splice(matchIndex, 1)
   state.predictions = state.predictions.filter(prediction => prediction.match_id !== removedMatch.id)
+  state.deletedMatchIds = Array.from(new Set([...(state.deletedMatchIds || []), String(removedMatch.id), String(removedMatch.api_id)]))
 
   recalculateLocalRankings()
   return ensureLocalSeed()

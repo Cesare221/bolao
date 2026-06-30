@@ -39,8 +39,12 @@ export default function AdminPage() {
       .order('created_at', { ascending: false })
 
     const localState = ensureLocalSeed()
+    const deletedMatchIds = new Set((localState.deletedMatchIds || []).map(String))
 
-    setMatches(matchesData && matchesData.length > 0 ? matchesData : localState.matches)
+    setMatches(
+      (matchesData && matchesData.length > 0 ? matchesData : localState.matches)
+        .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
+    )
     setParticipants(participantsData && participantsData.length > 0 ? participantsData : localState.participants)
     setPredictions(predictionsData && predictionsData.length > 0 ? predictionsData : localState.predictions)
   }
@@ -103,6 +107,8 @@ export default function AdminPage() {
 
     setStatusMessage('Jogo excluido!')
     setTimeout(() => setStatusMessage(''), 3000)
+    setMatches(prev => prev.filter(match => match.id !== matchId))
+    setPredictions(prev => prev.filter(prediction => prediction.match_id !== matchId))
     fetchData()
   }
 

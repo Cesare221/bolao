@@ -7,18 +7,30 @@ async function insertMissingMatches() {
     .from('matches')
     .select('api_id')
 
+  if ((existingMatches || []).length > 0) {
+    return false
+  }
+
   const existingApiIds = new Set((existingMatches || []).map(match => match.api_id))
   const missingMatches = brazilCupMatches.filter(match => !existingApiIds.has(match.api_id))
 
   if (missingMatches.length > 0) {
     await supabase.from('matches').insert(missingMatches)
   }
+
+  return missingMatches.length > 0
 }
 
 async function insertMissingParticipants() {
   const { data: existingParticipants } = await supabase
     .from('participants')
     .select('name')
+
+  if ((existingParticipants || []).length > 0) {
+    return (await supabase
+      .from('participants')
+      .select('id, name, sector'))?.data || []
+  }
 
   const existingNames = new Set((existingParticipants || []).map(participant => participant.name.toLowerCase()))
   const missingParticipants = brazilCupParticipants.filter(participant => !existingNames.has(participant.name.toLowerCase()))
@@ -35,6 +47,14 @@ async function insertMissingParticipants() {
 }
 
 async function insertMissingRankings(participants) {
+  const { data: existingRankings } = await supabase
+    .from('rankings')
+    .select('participant_id')
+
+  if ((existingRankings || []).length > 0) {
+    return false
+  }
+
   const participantByName = new Map(participants.map(participant => [participant.name.toLowerCase(), participant]))
   const rankingsToInsert = brazilCupRankings
     .map(ranking => {
@@ -65,6 +85,8 @@ async function insertMissingRankings(participants) {
       await supabase.from('rankings').insert(missingRankings)
     }
   }
+
+  return rankingsToInsert.length > 0
 }
 
 export async function syncBrazilMatches() {

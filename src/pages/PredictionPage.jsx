@@ -5,7 +5,7 @@ import { isBeforeMatch } from '../utils/dateHelpers'
 import { PredictionForm } from '../components/PredictionForm'
 import { MatchCard } from '../components/MatchCard'
 import { syncBrazilMatches } from '../services/matchSync'
-import { getLocalMatchById } from '../services/localStore'
+import { getDeletedMatchIds, getLocalMatchById } from '../services/localStore'
 import { ArrowLeft, ShieldAlert } from 'lucide-react'
 
 export default function PredictionPage() {
@@ -18,6 +18,7 @@ export default function PredictionPage() {
   useEffect(() => {
     async function fetchMatch() {
       await syncBrazilMatches()
+      const deletedMatchIds = new Set(getDeletedMatchIds().map(String))
 
       const { data } = await supabase
         .from('matches')
@@ -25,7 +26,14 @@ export default function PredictionPage() {
         .eq('id', matchId)
         .single()
 
-      setMatch(data || getLocalMatchById(matchId))
+      const localMatch = getLocalMatchById(matchId)
+      const nextMatch = data && !deletedMatchIds.has(String(data.id)) && !deletedMatchIds.has(String(data.api_id))
+        ? data
+        : localMatch && !deletedMatchIds.has(String(localMatch.id)) && !deletedMatchIds.has(String(localMatch.api_id))
+          ? localMatch
+          : null
+
+      setMatch(nextMatch)
       setLoading(false)
     }
 
