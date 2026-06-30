@@ -47,13 +47,11 @@ export default function HomePage() {
         </div>
         <div className="hero-badge">
           <Sparkles size={14} />
-          Bolão do UCT
+          Bolão da UCT
         </div>
-        <h1 className="app-title">Bolão do UCT</h1>
+        <h1 className="app-title">Bolão da UCT</h1>
         <p className="app-subtitle">Faça seus palpites para os jogos da seleção.</p>
         <div className="hero-pills">
-          <span className="hero-pill"><CalendarDays size={14} /> Próximo jogo</span>
-          <span className="hero-pill"><Trophy size={14} /> Ranking ao vivo</span>
         </div>
       </header>
 
