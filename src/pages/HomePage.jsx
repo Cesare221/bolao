@@ -73,17 +73,10 @@ export default function HomePage() {
               <span className="section-kicker">Atualizado automaticamente</span>
             </div>
             <MatchCard match={nextMatch} />
-            {nextMatch.is_finished ? (
-              <Link to="/jogos" className="btn-primary">
-                <span>Ver jogos</span>
-                <ArrowRight size={18} />
-              </Link>
-            ) : (
-              <Link to={`/palpite/${nextMatch.id}`} className="btn-primary">
-                <span>Enviar meu palpite</span>
-                <ArrowRight size={18} />
-              </Link>
-            )}
+            <Link to="/jogos" className="btn-primary">
+              <span>Ver jogos</span>
+              <ArrowRight size={18} />
+            </Link>
           </section>
         ) : (
           <section className="next-match-section">
@@ -99,9 +92,7 @@ export default function HomePage() {
             <Link to={`/palpite/${openMatch.id}`} className="btn-secondary">
               Enviar meu palpite
             </Link>
-          ) : (
-            <Link to="/jogos" className="btn-secondary">Ver todos os jogos</Link>
-          )}
+          ) : null}
           <Link to="/ranking" className="btn-secondary">Ver ranking</Link>
         </div>
       </main>
