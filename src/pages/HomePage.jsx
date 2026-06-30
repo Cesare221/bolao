@@ -8,6 +8,7 @@ import { ArrowRight, CalendarDays, Sparkles, Trophy } from 'lucide-react'
 
 export default function HomePage() {
   const [nextMatch, setNextMatch] = useState(null)
+  const [openMatch, setOpenMatch] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -28,11 +29,16 @@ export default function HomePage() {
         const latestFinishedMatch = [...visibleMatches]
           .filter(match => match.is_finished)
           .sort(sortByRecent)[0]
+        const latestOpenMatch = [...visibleMatches]
+          .filter(match => !match.is_finished)
+          .sort(sortByRecent)[0]
         setNextMatch(latestFinishedMatch || [...visibleMatches].sort(sortByRecent)[0])
+        setOpenMatch(latestOpenMatch || null)
       } else {
         const localMatches = getLocalMatches().filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
         const latestLocalMatch = [...localMatches].sort(sortByRecent)[0] || null
         setNextMatch(latestLocalMatch)
+        setOpenMatch([...localMatches].filter(match => !match.is_finished).sort(sortByRecent)[0] || null)
       }
 
       setLoading(false)
@@ -89,7 +95,13 @@ export default function HomePage() {
         )}
 
         <div className="home-actions">
-          <Link to="/jogos" className="btn-secondary">Ver todos os jogos</Link>
+          {openMatch ? (
+            <Link to={`/palpite/${openMatch.id}`} className="btn-secondary">
+              Enviar meu palpite
+            </Link>
+          ) : (
+            <Link to="/jogos" className="btn-secondary">Ver todos os jogos</Link>
+          )}
           <Link to="/ranking" className="btn-secondary">Ver ranking</Link>
         </div>
       </main>
