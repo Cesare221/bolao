@@ -1,34 +1,56 @@
-# BOLAO SUCT
+# Bolao da UCT
 
-Sistema de bolao interno para os jogos do Brasil na Copa do Mundo.
+Plataforma web de bolao criada para acompanhar jogos do Brasil, enviar palpites, calcular pontuacao automaticamente e exibir ranking em tempo real.
 
-Desenvolvido por Cesar Augusto.
+## Demo ao vivo
 
-## Tecnologias
+[Acessar a demo](https://bolaohemo.vercel.app/)
 
-- React 18 + Vite
-- Netlify (hospedagem + functions)
-- Supabase (banco de dados PostgreSQL)
-- Fallback local no navegador para teste e contingencia
+## Screenshot
 
-## Requisitos
+![Screenshot do projeto](./funcionalimg.png)
 
-- Node.js 18+
-- Conta gratuita no Netlify
-- Conta gratuita no Supabase
+## Visao geral
 
-## Instalacao
+O projeto foi pensado para uso interno da empresa, mas tambem funciona muito bem como vitrine de portifolio por reunir frontend moderno, autenticacao, banco de dados, regras de negocio e deploy em producao.
+
+## Principais recursos
+
+- Envio de palpites por participante
+- Lista de jogos com destaque para jogo atual e jogos encerrados
+- Ranking automatico com pontuacao
+- Painel admin para criar jogos, atualizar placares, cadastrar participantes e remover palpites
+- Login administrativo com Supabase Auth
+- Persistencia dos dados no Supabase
+- Deploy pronto para Vercel
+
+## Stack
+
+- React 18
+- Vite
+- Supabase
+- Vercel Functions
+- React Router
+- Lucide React
+
+## Destaques tecnicos
+
+- Integracao com banco relacional via Supabase
+- Autenticacao separada para admin
+- Recalculo automatico de ranking
+- Exclusao segura de jogos e palpites
+- Suporte a SPA com rotas amigaveis
+- Estrutura pronta para evoluir sem reescrever o projeto
+
+## Como rodar localmente
+
+### 1. Instalar dependencias
 
 ```bash
-# Clone o repositorio
-git clone <seu-repositorio>
-cd bolao-suct
-
-# Instale as dependencias
 npm install
 ```
 
-## Configuracao das Variaveis de Ambiente
+### 2. Configurar variaveis de ambiente
 
 Crie um arquivo `.env` na raiz do projeto:
 
@@ -36,87 +58,62 @@ Crie um arquivo `.env` na raiz do projeto:
 VITE_SUPABASE_URL=https://seu-projeto.supabase.co
 VITE_SUPABASE_ANON_KEY=sua-chave-anonima
 VITE_ADMIN_EMAIL=admin@seu-dominio.com
+
+SUPABASE_URL=https://seu-projeto.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=sua-chave-service-role
+API_FOOTBALL_KEY=sua-chave-api-football
 ```
 
-**Importante:** No Netlify, configure as mesmas variaveis no painel:
-- `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` vao para o frontend
-- `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` ficam para as Netlify Functions
-- `SUPABASE_SERVICE_ROLE_KEY` deve ser a chave secreta do Supabase, nao a anon key
-- `API_FOOTBALL_KEY` e opcional, se voce quiser a sincronizacao externa
-- `VITE_ADMIN_EMAIL` deve ser o email do usuario admin cadastrado no Supabase Auth
-- Painel: `Site Settings > Build & Deploy > Environment Variables`
-
-Depois de criar o usuario no Supabase Auth, insira o email dele na tabela `admin_users`:
-
-```sql
-insert into admin_users (email) values ('admin@seu-dominio.com');
-```
-
-## Roadmap Para Acessar o Site
-
-Se voce quer ir direto ao ponto, siga este roteiro:
-
-1. Criar o projeto no Supabase
-2. Copiar `Project URL` e `anon public key`
-3. Preencher o arquivo `.env`
-4. Executar `supabase/migrations/001_initial_schema.sql`
-5. Executar `supabase/migrations/002_public_access_policies.sql`
-6. Executar `supabase/seed.sql`
-7. Executar `supabase/migrations/004_admin_auth_policies.sql`
-8. Rodar `npm run dev` para testar localmente
-9. Fazer deploy no Netlify
-10. Abrir a URL gerada pelo Netlify
-
-O passo a passo completo esta em [`ROADMAP_ACESSO.md`](./ROADMAP_ACESSO.md).
-
-## Banco de Dados (Supabase)
-
-Execute o migration script no SQL Editor do Supabase:
-
-1. Acesse o dashboard do Supabase
-2. Va para SQL Editor
-3. Cole o conteudo de `supabase/migrations/001_initial_schema.sql`
-4. Execute
-
-Depois, rode também `supabase/migrations/004_admin_auth_policies.sql` para proteger as alteracoes administrativas com o email autorizado.
-
-## Desenvolvimento Local
+### 3. Rodar o projeto
 
 ```bash
 npm run dev
 ```
 
-O frontend sera executado em http://localhost:5173
+O app fica disponivel em `http://localhost:5173`.
 
-## Deploy no Netlify
+## Deploy na Vercel
 
-### Opcao 1: Deploy via Git
+O projeto tambem esta preparado para Vercel.
 
-1. Crie um repositorio no GitHub/GitLab
-2. Conecte-o ao Netlify (New site from Git)
-3. Configure as variaveis de ambiente no painel do Netlify
-4. O netlify.toml ja configurado fara o build automaticamente
+### Variaveis exigidas na Vercel
 
-### Opcao 2: Deploy via CLI
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_ADMIN_EMAIL`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `API_FOOTBALL_KEY`
+
+### Comando de teste local na Vercel
 
 ```bash
-npm run build
-npx netlify deploy --prod
+npm run dev:vercel
 ```
 
-## Funcionalidades
+## Banco de dados
 
-- Pagina inicial com destaque para o proximo jogo do Brasil
-- Lista completa de jogos do Brasil na Copa
-- Envio de palpites (maximo 2 por pessoa)
-- Ranking com pontuacao
-- Painel admin protegido por login real no Supabase Auth
-- Atualizacao automatica dos jogos do Brasil quando a API estiver configurada
-- Fallback local para testes quando o Supabase estiver vazio ou bloqueado
+O schema e os seeds ficam em:
 
-## Regras de Pontuacao
+- [`supabase/migrations/001_initial_schema.sql`](./supabase/migrations/001_initial_schema.sql)
+- [`supabase/migrations/002_public_access_policies.sql`](./supabase/migrations/002_public_access_policies.sql)
+- [`supabase/migrations/004_admin_auth_policies.sql`](./supabase/migrations/004_admin_auth_policies.sql)
+- [`supabase/seed.sql`](./supabase/seed.sql)
 
-| Resultado | Pontos |
-|-----------|--------|
-| Acertou o resultado | 1 ponto |
-| Errou | 0 pontos |
+## Estrutura principal
+
+- [`src/pages/HomePage.jsx`](./src/pages/HomePage.jsx)
+- [`src/pages/MatchesPage.jsx`](./src/pages/MatchesPage.jsx)
+- [`src/pages/RankingPage.jsx`](./src/pages/RankingPage.jsx)
+- [`src/pages/PredictionPage.jsx`](./src/pages/PredictionPage.jsx)
+- [`src/pages/AdminPage.jsx`](./src/pages/AdminPage.jsx)
+
+## Para portifolio
+
+Se quiser descrever o projeto em uma frase curta:
+
+> Plataforma web de bolao com envio de palpites, ranking automatico e painel administrativo integrado ao Supabase.
+
+## Licenca
+
+Projeto de portifolio e demonstracao tecnica.

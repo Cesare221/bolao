@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "seed:remote": "node scripts/seed-remote-supabase.mjs"
+    "seed:remote": "node scripts/seed-remote-supabase.mjs",
+    "dev:vercel": "npx vercel dev"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

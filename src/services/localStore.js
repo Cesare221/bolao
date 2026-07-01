@@ -286,6 +286,19 @@ export function saveLocalPrediction({ matchId, name, sector, brazilScore, oppone
   return ensureLocalSeed()
 }
 
+export function deleteLocalPrediction(predictionId) {
+  const state = ensureLocalSeed()
+  const index = state.predictions.findIndex(prediction => prediction.id === predictionId)
+
+  if (index === -1) {
+    throw new Error('Palpite local nao encontrado')
+  }
+
+  state.predictions.splice(index, 1)
+  recalculateLocalRankings()
+  return ensureLocalSeed()
+}
+
 export function saveLocalMatch(match) {
   const state = ensureLocalSeed()
   const index = state.matches.findIndex(item => item.id === match.id || String(item.api_id) === String(match.api_id))

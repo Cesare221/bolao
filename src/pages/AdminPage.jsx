@@ -2,7 +2,7 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 import { AdminLayout } from '../components/AdminLayout'
 import { syncBrazilMatches } from '../services/matchSync'
-import { addLocalMatch, addLocalParticipant, deleteLocalMatch, ensureLocalSeed, recalculateLocalRankings, saveLocalMatchScore, saveLocalPrediction } from '../services/localStore'
+import { addLocalMatch, addLocalParticipant, deleteLocalMatch, deleteLocalPrediction, ensureLocalSeed, recalculateLocalRankings, saveLocalMatchScore, saveLocalPrediction } from '../services/localStore'
 import { CalendarDays, ClipboardList, PlusCircle, RotateCcw, UserPlus, PenSquare, Trash2 } from 'lucide-react'
 
 const initialParticipantForm = { name: '', sector: '' }
@@ -252,6 +252,36 @@ export default function AdminPage() {
     setTimeout(() => setStatusMessage(''), 3000)
     fetchData()
   }
+
+  async function handleDeletePrediction(predictionId) {
+    const prediction = predictions.find(item => item.id === predictionId)
+    const confirmDelete = window.confirm(
+      `Excluir o palpite de "${prediction?.participants?.name || prediction?.participant_name || 'participante'}"? O ranking sera recalculado.`
+    )
+    if (!confirmDelete) return
+
+    try {
+      await callAdminMutation('delete_prediction', { prediction_id: predictionId })
+      setStatusMessage('Palpite excluido com sucesso!')
+    } catch (err) {
+      if (!isSupabaseConfigured) {
+        try {
+          deleteLocalPrediction(predictionId)
+        } catch (localError) {
+          setStatusMessage(localError.message || 'Nao foi possivel excluir o palpite.')
+          return
+        }
+        setStatusMessage(err.message || 'Nao foi possivel excluir o palpite.')
+      } else {
+        setStatusMessage(err.message || 'Nao foi possivel excluir o palpite.')
+        return
+      }
+    }
+
+    setTimeout(() => setStatusMessage(''), 3000)
+    fetchData()
+  }
+
   async function handleRecalculate() {
     try {
       await callAdminMutation('recalculate_ranking')
@@ -367,6 +397,14 @@ export default function AdminPage() {
                   <span className={`pred-points ${pred.points > 0 ? 'scored' : ''}`}>
                     {pred.points} pts
                   </span>
+                  <button
+                    type="button"
+                    className="btn-small btn-danger"
+                    onClick={() => handleDeletePrediction(pred.id)}
+                  >
+                    <Trash2 size={14} />
+                    Excluir
+                  </button>
                 </div>
               ))}
             </div>
