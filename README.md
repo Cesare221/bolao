@@ -1,64 +1,62 @@
-# Bolao do Brasil
+# Bolao UCT
 
-Plataforma web de bolao para acompanhar jogos do Brasil, enviar palpites, calcular pontuacao automaticamente e exibir ranking em tempo real.
+Plataforma web de bolao para centralizar palpites, jogos, placares e ranking com atualizacao confiavel e operacao simples.
 
-## Demo ao vivo
-
-[Acessar a demo](https://bolaohemo.vercel.app/)
-
-## Screenshot
+[![Demo](https://img.shields.io/badge/Demo-online-2563EB?style=for-the-badge&logo=vercel&logoColor=white)](https://bolaohemo.vercel.app/)
+[![React](https://img.shields.io/badge/Frontend-React-111827?style=for-the-badge&logo=react&logoColor=61DAFB)](#stack)
+[![Supabase](https://img.shields.io/badge/Dados-Supabase-111827?style=for-the-badge&logo=supabase&logoColor=3ECF8E)](#stack)
+[![Ranking](https://img.shields.io/badge/Regras-ranking_automatico-111827?style=for-the-badge&logo=googlesheets&logoColor=white)](#visao-geral)
 
 ![Screenshot do projeto](./funcionalimg.png)
 
-## Visao geral
+## Visao Geral
 
-O projeto esta estruturado para servir tanto como app real quanto como projeto de portfolio, reunindo frontend moderno, autenticacao, banco de dados, regras de negocio e deploy em producao.
+O Bolao UCT foi desenvolvido para substituir controles manuais de palpites e ranking por uma plataforma web centralizada, visual e confiavel.
 
-## Principais recursos
+O projeto combina interface moderna, regras de pontuacao, autenticacao administrativa e persistencia de dados, funcionando tanto como aplicacao real quanto como case de portfolio.
 
-- Envio de palpites por participante
-- Lista de jogos com destaque para partidas abertas e resultados encerrados
-- Ranking automatico com pontuacao
-- Painel admin para criar jogos, atualizar placares, cadastrar participantes e remover palpites
-- Login administrativo com Supabase Auth
-- Persistencia dos dados no Supabase
-- Deploy pronto para Vercel
+## O que o sistema faz
+
+- recebe palpites dos participantes;
+- lista jogos e resultados;
+- calcula ranking automaticamente;
+- disponibiliza painel administrativo;
+- permite criar jogos, atualizar placares e gerenciar participantes;
+- persiste dados no Supabase;
+- publica a aplicacao em producao via Vercel.
 
 ## Stack
 
 - React 18
 - Vite
 - Supabase
-- Vercel Functions
 - React Router
 - Lucide React
+- Vercel Functions
 
 ## Destaques tecnicos
 
-- Integracao com banco relacional via Supabase
-- Autenticacao separada para admin
-- Recalculo automatico de ranking
-- Exclusao segura de jogos e palpites
-- Suporte a SPA com rotas amigaveis
-- Estrutura pronta para evoluir sem reescrever o projeto
+- integracao com banco relacional via Supabase;
+- autenticacao separada para administracao;
+- recalculo automatico de ranking;
+- suporte a SPA com rotas amigaveis;
+- estrutura pronta para evolucao sem reescrita do projeto.
 
 ## Como rodar localmente
 
-### 1. Instalar dependencias
+### Instalacao
 
 ```bash
 npm install
 ```
 
-### 2. Configurar variaveis de ambiente
-
-Copie o arquivo de exemplo:
+### Variaveis de ambiente
 
 ```bash
 cp .env.example .env
 ```
 
-Depois ajuste os valores no `.env`:
+Exemplo:
 
 ```env
 VITE_SUPABASE_URL=https://seu-projeto.supabase.co
@@ -71,7 +69,7 @@ SUPABASE_SERVICE_ROLE_KEY=sua-chave-service-role
 API_FOOTBALL_KEY=sua-chave-api-football
 ```
 
-### 3. Rodar o projeto
+### Execucao
 
 ```bash
 npm run dev
@@ -79,20 +77,11 @@ npm run dev
 
 O app fica disponivel em `http://localhost:5173`.
 
-## Deploy na Vercel
+## Deploy
 
-O projeto tambem esta preparado para Vercel.
+O projeto esta preparado para Vercel.
 
-### Variaveis exigidas na Vercel
-
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-- `VITE_ADMIN_EMAIL`
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `API_FOOTBALL_KEY`
-
-### Comando de teste local na Vercel
+Para simular ambiente da Vercel localmente:
 
 ```bash
 npm run dev:vercel
@@ -102,32 +91,32 @@ npm run dev:vercel
 
 O schema e os seeds ficam em:
 
-- [`supabase/migrations/001_initial_schema.sql`](./supabase/migrations/001_initial_schema.sql)
-- [`supabase/migrations/002_public_access_policies.sql`](./supabase/migrations/002_public_access_policies.sql)
-- [`supabase/migrations/004_admin_auth_policies.sql`](./supabase/migrations/004_admin_auth_policies.sql)
-- [`supabase/seed.sql`](./supabase/seed.sql)
+- `supabase/migrations/001_initial_schema.sql`
+- `supabase/migrations/002_public_access_policies.sql`
+- `supabase/migrations/004_admin_auth_policies.sql`
+- `supabase/seed.sql`
 
-## Estrutura principal
+## Objetivo do projeto
 
-- [`src/pages/HomePage.jsx`](./src/pages/HomePage.jsx)
-- [`src/pages/MatchesPage.jsx`](./src/pages/MatchesPage.jsx)
-- [`src/pages/RankingPage.jsx`](./src/pages/RankingPage.jsx)
-- [`src/pages/PredictionPage.jsx`](./src/pages/PredictionPage.jsx)
-- [`src/pages/AdminPage.jsx`](./src/pages/AdminPage.jsx)
+Este projeto faz parte do meu portfolio como exemplo de aplicacao com regras de negocio, ranking em tempo real e area administrativa. Ele foi desenvolvido para demonstrar:
 
-## Checklist para publicar no GitHub
+- integracao entre frontend, backend leve e banco;
+- modelagem de fluxo com pontuacao;
+- autenticacao administrativa;
+- experiencia clara para acompanhamento de dados e competicao.
 
-- Mantenha apenas `.env.example` no repositorio. O `.env` real ja esta ignorado pelo Git.
-- Configure segredos somente no provedor de deploy e no seu ambiente local.
-- Se alguma chave real ja tiver sido commitada no passado, rotacione essas credenciais antes de abrir o repositorio.
-- Revise URLs de demo, capturas de tela e textos para garantir que nao exponham contexto privado.
+## Demo
 
-## Para portfolio
+- Aplicacao online: https://bolaohemo.vercel.app/
 
-Se quiser descrever o projeto em uma frase curta:
+## Repositorio
 
-> Plataforma web de bolao com envio de palpites, ranking automatico e painel administrativo integrado ao Supabase.
+- Codigo: https://github.com/Cesare221/bolao
 
-## Licenca
+## Contato
 
-Projeto de portfolio e demonstracao tecnica.
+- Portfolio: https://cesarddev.com.br/
+- GitHub: https://github.com/Cesare221
+- LinkedIn: https://linkedin.com/in/cdelmondes
+
+Se este projeto fizer sentido para o seu contexto, fico a disposicao para conversar sobre dashboards, integracao com banco e regras de negocio em apps web.
