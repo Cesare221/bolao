@@ -1,13 +1,38 @@
 ﻿import React, { useEffect, useState } from 'react'
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 import { AdminLayout } from '../components/AdminLayout'
-import { calculatePredictionBreakdown } from '../utils/scoring'
 import { syncBrazilMatches } from '../services/matchSync'
 import { addLocalMatch, addLocalParticipant, deleteLocalMatch, ensureLocalSeed, recalculateLocalRankings, saveLocalMatchScore, saveLocalPrediction } from '../services/localStore'
 import { CalendarDays, ClipboardList, PlusCircle, RotateCcw, UserPlus, PenSquare, Trash2 } from 'lucide-react'
 
 const initialParticipantForm = { name: '', sector: '' }
 const initialPredictionForm = { participantId: '', matchId: '', brazilScore: '', opponentScore: '' }
+
+async function callAdminMutation(action, payload = {}) {
+  const { data: sessionData } = await supabase.auth.getSession()
+  const token = sessionData?.session?.access_token
+
+  if (!token) {
+    throw new Error('Sessao admin nao encontrada. Entre novamente.')
+  }
+
+  const response = await fetch('/api/adminMutations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ action, ...payload })
+  })
+
+  const result = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(result.error || result.message || 'Falha na operacao administrativa.')
+  }
+
+  return result
+}
 
 export default function AdminPage() {
   const [matches, setMatches] = useState([])
@@ -71,17 +96,11 @@ export default function AdminPage() {
     if (scores.brazil === undefined || scores.opponent === undefined) return
 
     try {
-      const { error } = await supabase
-        .from('matches')
-        .update({
-          brazil_score: parseInt(scores.brazil, 10),
-          opponent_score: parseInt(scores.opponent, 10),
-          is_finished: true,
-          status: 'FT'
-        })
-        .eq('id', matchId)
-
-      if (error) throw error
+      await callAdminMutation('update_match_score', {
+        match_id: matchId,
+        brazil_score: parseInt(scores.brazil, 10),
+        opponent_score: parseInt(scores.opponent, 10)
+      })
     } catch (err) {
       if (!isSupabaseConfigured) {
         saveLocalMatchScore(matchId, {
@@ -107,12 +126,7 @@ export default function AdminPage() {
     if (!confirmDelete) return
 
     try {
-      const { error } = await supabase
-        .from('matches')
-        .delete()
-        .eq('id', matchId)
-
-      if (error) throw error
+      await callAdminMutation('delete_match', { match_id: matchId })
     } catch (err) {
       if (isSupabaseConfigured) {
         setStatusMessage(err.message || 'Nao foi possivel excluir o jogo.')
@@ -140,17 +154,13 @@ export default function AdminPage() {
     if (!newMatch.opponent || !newMatch.match_date) return
 
     try {
-      const { error } = await supabase
-        .from('matches')
-        .insert({
-          opponent: newMatch.opponent,
-          opponent_flag: newMatch.opponent_flag || '',
-          match_date: new Date(newMatch.match_date).toISOString(),
-          status: 'NS',
-          is_finished: false
-        })
-
-      if (error) throw error
+      await callAdminMutation('create_match', {
+        opponent: newMatch.opponent,
+        opponent_flag: newMatch.opponent_flag || '',
+        match_date: new Date(newMatch.match_date).toISOString(),
+        status: 'NS',
+        is_finished: false
+      })
       setStatusMessage('Jogo criado com sucesso!')
     } catch (err) {
       if (!isSupabaseConfigured) {
@@ -180,11 +190,7 @@ export default function AdminPage() {
     if (!name) return
 
     try {
-      const { error } = await supabase
-        .from('participants')
-        .insert({ name, sector })
-
-      if (error) throw error
+      await callAdminMutation('create_participant', { name, sector })
       setStatusMessage('Funcionário cadastrado com sucesso!')
     } catch (err) {
       if (!isSupabaseConfigured) {
@@ -223,11 +229,7 @@ export default function AdminPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('predictions')
-        .insert(payload)
-
-      if (error) throw error
+      await callAdminMutation('create_prediction', payload)
       setStatusMessage('Palpite lançado com sucesso!')
     } catch (err) {
       if (!isSupabaseConfigured) {
@@ -252,52 +254,7 @@ export default function AdminPage() {
   }
   async function handleRecalculate() {
     try {
-      const { data: allPredictions } = await supabase
-        .from('predictions')
-        .select('*, matches(*)')
-
-      if (!allPredictions) {
-        throw new Error('No predictions data')
-      }
-
-      for (const pred of allPredictions) {
-        if (pred.matches?.is_finished && pred.matches?.brazil_score !== null) {
-          const breakdown = calculatePredictionBreakdown(pred, pred.matches.brazil_score, pred.matches.opponent_score)
-          const { error } = await supabase.from('predictions').update({ points: breakdown.points }).eq('id', pred.id)
-          if (error) throw error
-        }
-      }
-
-      const { data: participantsData } = await supabase.from('participants').select('*, predictions(*)')
-      if (participantsData) {
-        for (const participant of participantsData) {
-          const stats = participant.predictions.reduce((sum, pr) => {
-            const breakdown = calculatePredictionBreakdown(
-              pr,
-              pr.matches?.brazil_score ?? pr.brazil_score ?? null,
-              pr.matches?.opponent_score ?? pr.opponent_score ?? null
-            )
-
-            return {
-              totalPoints: sum.totalPoints + breakdown.points,
-              exactScores: sum.exactScores + breakdown.exactScore,
-              correctOutcomes: sum.correctOutcomes + breakdown.correctOutcome
-            }
-          }, { totalPoints: 0, exactScores: 0, correctOutcomes: 0 })
-
-          const { error } = await supabase.from('rankings').upsert({
-            participant_id: participant.id,
-            participant_name: participant.name,
-            sector: participant.sector,
-            total_points: stats.totalPoints,
-            exact_scores: stats.exactScores,
-            correct_outcomes: stats.correctOutcomes,
-            updated_at: new Date().toISOString()
-          })
-
-          if (error) throw error
-        }
-      }
+      await callAdminMutation('recalculate_ranking')
       setStatusMessage('Ranking recalculado!')
     } catch (err) {
       if (!isSupabaseConfigured) {
