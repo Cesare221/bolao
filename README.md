@@ -1,6 +1,6 @@
-# Bolao da UCT
+# Bolao do Brasil
 
-Plataforma web de bolao criada para acompanhar jogos do Brasil, enviar palpites, calcular pontuacao automaticamente e exibir ranking em tempo real.
+Plataforma web de bolao para acompanhar jogos do Brasil, enviar palpites, calcular pontuacao automaticamente e exibir ranking em tempo real.
 
 ## Demo ao vivo
 
@@ -12,12 +12,12 @@ Plataforma web de bolao criada para acompanhar jogos do Brasil, enviar palpites,
 
 ## Visao geral
 
-O projeto foi pensado para uso interno da empresa, mas tambem funciona muito bem como vitrine de portifolio por reunir frontend moderno, autenticacao, banco de dados, regras de negocio e deploy em producao.
+O projeto esta estruturado para servir tanto como app real quanto como projeto de portfolio, reunindo frontend moderno, autenticacao, banco de dados, regras de negocio e deploy em producao.
 
 ## Principais recursos
 
 - Envio de palpites por participante
-- Lista de jogos com destaque para jogo atual e jogos encerrados
+- Lista de jogos com destaque para partidas abertas e resultados encerrados
 - Ranking automatico com pontuacao
 - Painel admin para criar jogos, atualizar placares, cadastrar participantes e remover palpites
 - Login administrativo com Supabase Auth
@@ -52,12 +52,19 @@ npm install
 
 ### 2. Configurar variaveis de ambiente
 
-Crie um arquivo `.env` na raiz do projeto:
+Copie o arquivo de exemplo:
+
+```bash
+cp .env.example .env
+```
+
+Depois ajuste os valores no `.env`:
 
 ```env
 VITE_SUPABASE_URL=https://seu-projeto.supabase.co
 VITE_SUPABASE_ANON_KEY=sua-chave-anonima
 VITE_ADMIN_EMAIL=admin@seu-dominio.com
+VITE_ADMIN_PASSWORD=sua-senha-apenas-para-desenvolvimento-local
 
 SUPABASE_URL=https://seu-projeto.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=sua-chave-service-role
@@ -108,7 +115,14 @@ O schema e os seeds ficam em:
 - [`src/pages/PredictionPage.jsx`](./src/pages/PredictionPage.jsx)
 - [`src/pages/AdminPage.jsx`](./src/pages/AdminPage.jsx)
 
-## Para portifolio
+## Checklist para publicar no GitHub
+
+- Mantenha apenas `.env.example` no repositorio. O `.env` real ja esta ignorado pelo Git.
+- Configure segredos somente no provedor de deploy e no seu ambiente local.
+- Se alguma chave real ja tiver sido commitada no passado, rotacione essas credenciais antes de abrir o repositorio.
+- Revise URLs de demo, capturas de tela e textos para garantir que nao exponham contexto privado.
+
+## Para portfolio
 
 Se quiser descrever o projeto em uma frase curta:
 
@@ -116,4 +130,4 @@ Se quiser descrever o projeto em uma frase curta:
 
 ## Licenca
 
-Projeto de portifolio e demonstracao tecnica.
+Projeto de portfolio e demonstracao tecnica.

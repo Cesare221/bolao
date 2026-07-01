@@ -1269,9 +1269,40 @@ button, input, select, textarea {
 
 .app-footer {
   text-align: center;
-  padding: 18px 10px 8px;
-  color: var(--muted);
-  font-size: 0.78rem;
+  padding: 24px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.app-footer-kicker {
+  color: #6f7288;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.app-footer-name {
+  color: #1f2340;
+  font-size: 1.9rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.app-footer-link {
+  color: #364171;
+  font-size: 1.02rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.app-footer-link:hover,
+.app-footer-link:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
 }
 
 .loading,

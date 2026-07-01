@@ -4,7 +4,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 import { MatchCard } from '../components/MatchCard'
 import { syncBrazilMatches } from '../services/matchSync'
 import { getDeletedMatchIds, getLocalMatches } from '../services/localStore'
-import { ArrowRight, CalendarDays, Sparkles, Trophy } from 'lucide-react'
+import { ArrowRight, Sparkles, Trophy } from 'lucide-react'
 
 export default function HomePage() {
   const [nextMatch, setNextMatch] = useState(null)
@@ -72,12 +72,11 @@ export default function HomePage() {
         </div>
         <div className="hero-badge">
           <Sparkles size={14} />
-          Bolão da UCT
+          Bolao do Brasil
         </div>
-        <h1 className="app-title">Bolão da UCT</h1>
-        <p className="app-subtitle">Faça seus palpites para os jogos da seleção.</p>
-        <div className="hero-pills">
-        </div>
+        <h1 className="app-title">Bolao do Brasil</h1>
+        <p className="app-subtitle">Faca seus palpites para os jogos da selecao.</p>
+        <div className="hero-pills" />
       </header>
 
       <main className="home-content">
@@ -86,7 +85,7 @@ export default function HomePage() {
         ) : nextMatch ? (
           <section className="next-match-section">
             <div className="section-heading">
-              <h2 className="section-title">Último Jogo</h2>
+              <h2 className="section-title">Ultimo jogo</h2>
               <span className="section-kicker">Atualizado automaticamente</span>
             </div>
             <MatchCard match={nextMatch} />
@@ -99,7 +98,7 @@ export default function HomePage() {
           <section className="next-match-section">
             <div className="empty-panel">
               <Sparkles size={22} />
-              <p className="empty-state">Nenhum jogo do Brasil na Copa agendado ainda.</p>
+              <p className="empty-state">Nenhum jogo do Brasil agendado ainda.</p>
             </div>
           </section>
         )}
@@ -115,7 +114,16 @@ export default function HomePage() {
       </main>
 
       <footer className="app-footer">
-        <p>Desenvolvido por Cesar Augusto</p>
+        <span className="app-footer-kicker">Desenvolvido por</span>
+        <strong className="app-footer-name">Cesar Augusto</strong>
+        <a
+          className="app-footer-link"
+          href="https://cesarddv.com.br"
+          target="_blank"
+          rel="noreferrer"
+        >
+          cesarddv.com.br
+        </a>
       </footer>
     </div>
   )

@@ -60,7 +60,7 @@ export default function RankingPage() {
       <div className="page-hero compact">
         <div className="page-hero-chip"><Medal size={14} /> Ranking</div>
         <h1 className="page-title">Ranking Geral</h1>
-        <p className="page-subtitle">Especialistas da empresa.</p>
+        <p className="page-subtitle">Acompanhe a classificacao dos participantes.</p>
       </div>
       {loading ? (
         <p className="loading">Carregando...</p>
