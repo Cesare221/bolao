@@ -45,7 +45,9 @@ exports.handler = async () => {
   if (!supabaseUrl || !supabaseKey) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Supabase credentials not configured' })
+      body: JSON.stringify({
+        error: 'Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY no Netlify. Nao use o anon key nesta funcao.'
+      })
     }
   }
 

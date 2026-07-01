@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "seed:remote": "node scripts/seed-remote-supabase.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

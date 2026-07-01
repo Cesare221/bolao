@@ -39,8 +39,9 @@ VITE_ADMIN_EMAIL=admin@seu-dominio.com
 ```
 
 **Importante:** No Netlify, configure as mesmas variaveis no painel:
-- `VITE_...` vai para o frontend
+- `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` vao para o frontend
 - `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` ficam para as Netlify Functions
+- `SUPABASE_SERVICE_ROLE_KEY` deve ser a chave secreta do Supabase, nao a anon key
 - `API_FOOTBALL_KEY` e opcional, se voce quiser a sincronizacao externa
 - `VITE_ADMIN_EMAIL` deve ser o email do usuario admin cadastrado no Supabase Auth
 - Painel: `Site Settings > Build & Deploy > Environment Variables`

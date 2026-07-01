@@ -21,7 +21,14 @@ INSERT INTO matches (api_id, opponent, opponent_flag, match_date, brazil_score, 
   (1003, 'Escocia', '🏴', '2026-06-24T16:00:00Z', 3, 0, 'FT', true),
   (1004, 'Japao', '🇯🇵', '2026-06-29T16:00:00Z', 2, 1, 'FT', true),
   (1005, 'A definir', '❓', '2026-07-04T16:00:00Z', NULL, NULL, 'NS', false)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (api_id) DO UPDATE SET
+  opponent = EXCLUDED.opponent,
+  opponent_flag = EXCLUDED.opponent_flag,
+  match_date = EXCLUDED.match_date,
+  brazil_score = EXCLUDED.brazil_score,
+  opponent_score = EXCLUDED.opponent_score,
+  status = EXCLUDED.status,
+  is_finished = EXCLUDED.is_finished;
 
 -- Seed ranking with current points
 INSERT INTO rankings (participant_id, participant_name, sector, total_points, exact_scores, correct_outcomes) VALUES
@@ -37,4 +44,10 @@ INSERT INTO rankings (participant_id, participant_name, sector, total_points, ex
   ((SELECT id FROM participants WHERE name = 'Rafael' LIMIT 1), 'Rafael', 'Transfusao', 1, 1, 1),
   ((SELECT id FROM participants WHERE name = 'Carol' LIMIT 1), 'Carol', 'Liberacao', 1, 1, 1),
   ((SELECT id FROM participants WHERE name = 'Giza' LIMIT 1), 'Giza', 'Coleta', 1, 1, 1)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (participant_id) DO UPDATE SET
+  participant_name = EXCLUDED.participant_name,
+  sector = EXCLUDED.sector,
+  total_points = EXCLUDED.total_points,
+  exact_scores = EXCLUDED.exact_scores,
+  correct_outcomes = EXCLUDED.correct_outcomes,
+  updated_at = NOW();
