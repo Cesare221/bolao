@@ -115,8 +115,8 @@ async function recalculateRanking(supabase) {
 
       const breakdown = calculatePredictionBreakdown(
         pr,
-        pr.matches?.brazil_score ?? pr.brazil_score ?? null,
-        pr.matches?.opponent_score ?? pr.opponent_score ?? null
+        pr.matches?.brazil_score ?? null,
+        pr.matches?.opponent_score ?? null
       )
 
       return {
