@@ -3,6 +3,22 @@ import { createClient } from '@supabase/supabase-js'
 const API_BASE = 'https://v3.football.api-sports.io'
 const TEAM_BRAZIL = 6
 const DEFAULT_SEASON = 2026
+const baselineMatchApiIds = new Set([1001, 1002, 1003, 1004])
+const baseRankings = new Map([
+  ['adrianne', { total_points: 3, exact_scores: 3, correct_outcomes: 3 }],
+  ['fran', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['francilda', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['stefany', { total_points: 2, exact_scores: 2, correct_outcomes: 2 }],
+  ['noel', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['denise', { total_points: 2, exact_scores: 2, correct_outcomes: 2 }],
+  ['huainny', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['andreza', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['wilson', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['regineide', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['rafael', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['carol', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['giza', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }]
+])
 
 function getOpponentAndScore(fixture) {
   const homeTeam = fixture.teams?.home
@@ -120,18 +136,28 @@ export default async function handler(req, res) {
 
     const { data: participants, error: participantsError } = await supabase
       .from('participants')
-      .select('id,name,sector,predictions(*)')
+      .select('id,name,sector,predictions(id,brazil_score,opponent_score,points,matches(api_id,brazil_score,opponent_score,is_finished))')
 
     if (participantsError) {
       throw participantsError
     }
 
     for (const participant of participants || []) {
+      const baseStats = baseRankings.get(String(participant.name || '').trim().toLowerCase()) || {
+        total_points: 0,
+        exact_scores: 0,
+        correct_outcomes: 0
+      }
+
       const predictionStats = (participant.predictions || []).reduce((sum, prediction) => {
+        if (baselineMatchApiIds.has(prediction.matches?.api_id)) {
+          return sum
+        }
+
         const breakdown = calculatePredictionBreakdown(
           prediction,
-          prediction.matches?.brazil_score ?? prediction.brazil_score ?? null,
-          prediction.matches?.opponent_score ?? prediction.opponent_score ?? null
+          prediction.matches?.brazil_score ?? null,
+          prediction.matches?.opponent_score ?? null
         )
 
         return {
@@ -139,7 +165,11 @@ export default async function handler(req, res) {
           exactScores: sum.exactScores + breakdown.exactScore,
           correctOutcomes: sum.correctOutcomes + breakdown.correctOutcome
         }
-      }, { totalPoints: 0, exactScores: 0, correctOutcomes: 0 })
+      }, {
+        totalPoints: baseStats.total_points,
+        exactScores: baseStats.exact_scores,
+        correctOutcomes: baseStats.correct_outcomes
+      })
 
       await supabase.from('rankings').upsert({
         participant_id: participant.id,
