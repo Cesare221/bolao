@@ -8,6 +8,30 @@ import { CalendarDays, ClipboardList, PlusCircle, RotateCcw, UserPlus, PenSquare
 const initialParticipantForm = { name: '', sector: '' }
 const initialPredictionForm = { participantId: '', matchId: '', brazilScore: '', opponentScore: '' }
 
+async function requestAdminMutation(url, token, payload) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  })
+
+  const responseText = await response.text()
+  let result = {}
+
+  if (responseText) {
+    try {
+      result = JSON.parse(responseText)
+    } catch {
+      result = { error: responseText }
+    }
+  }
+
+  return { response, result }
+}
+
 async function callAdminMutation(action, payload = {}) {
   const { data: sessionData } = await supabase.auth.getSession()
   const token = sessionData?.session?.access_token
@@ -16,22 +40,28 @@ async function callAdminMutation(action, payload = {}) {
     throw new Error('Sessao admin nao encontrada. Entre novamente.')
   }
 
-  const response = await fetch('/api/adminMutations', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify({ action, ...payload })
-  })
+  const endpoints = ['/api/adminMutations', '/.netlify/functions/adminMutations']
+  let lastError = null
 
-  const result = await response.json().catch(() => ({}))
+  for (const endpoint of endpoints) {
+    const { response, result } = await requestAdminMutation(endpoint, token, { action, ...payload })
 
-  if (!response.ok) {
-    throw new Error(result.error || result.message || 'Falha na operacao administrativa.')
+    if (response.ok) {
+      return result
+    }
+
+    const message = result.error || result.message || ''
+    const isRouteMismatch = response.status === 404 || /Cannot\s+(GET|POST)/i.test(message)
+
+    if (isRouteMismatch) {
+      lastError = new Error(message || 'Endpoint administrativo indisponivel.')
+      continue
+    }
+
+    throw new Error(message || 'Falha na operacao administrativa.')
   }
 
-  return result
+  throw lastError || new Error('Falha na operacao administrativa.')
 }
 
 export default function AdminPage() {
@@ -70,8 +100,21 @@ export default function AdminPage() {
         (isSupabaseConfigured ? (matchesData || []) : localState.matches)
           .filter(match => !deletedMatchIds.has(String(match.id)) && !deletedMatchIds.has(String(match.api_id)))
       )
-      setParticipants(isSupabaseConfigured ? (participantsData || []) : localState.participants)
-      setPredictions(isSupabaseConfigured ? (predictionsData || []) : localState.predictions)
+      const resolvedPredictions = isSupabaseConfigured ? (predictionsData || []) : localState.predictions
+      const predictionCountByParticipant = resolvedPredictions.reduce((acc, prediction) => {
+        const participantId = prediction.participant_id
+        if (!participantId) return acc
+        acc[participantId] = (acc[participantId] || 0) + 1
+        return acc
+      }, {})
+
+      setParticipants(
+        (isSupabaseConfigured ? (participantsData || []) : localState.participants).map(participant => ({
+          ...participant,
+          prediction_count: predictionCountByParticipant[participant.id] || 0
+        }))
+      )
+      setPredictions(resolvedPredictions)
     } catch {
       if (!isSupabaseConfigured) {
         const localState = ensureLocalSeed()

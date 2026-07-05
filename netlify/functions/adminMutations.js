@@ -62,6 +62,55 @@ async function getAdminClientAndUser(token) {
   return { supabase, user }
 }
 
+async function createOrUpdatePrediction(supabase, body) {
+  const participantId = body.participant_id
+  const matchId = body.match_id
+  const brazilScore = Number.parseInt(body.brazil_score, 10)
+  const opponentScore = Number.parseInt(body.opponent_score, 10)
+
+  if (!participantId || !matchId) {
+    throw new Error('Participante e jogo sao obrigatorios.')
+  }
+
+  if (Number.isNaN(brazilScore) || Number.isNaN(opponentScore)) {
+    throw new Error('Informe placares validos para o palpite.')
+  }
+
+  const { data: existingPrediction, error: existingPredictionError } = await supabase
+    .from('predictions')
+    .select('id')
+    .eq('participant_id', participantId)
+    .eq('match_id', matchId)
+    .maybeSingle()
+
+  if (existingPredictionError) throw existingPredictionError
+
+  if (existingPrediction) {
+    const { error } = await supabase
+      .from('predictions')
+      .update({
+        brazil_score: brazilScore,
+        opponent_score: opponentScore
+      })
+      .eq('id', existingPrediction.id)
+
+    if (error) throw error
+
+    return { message: 'Palpite atualizado com sucesso!' }
+  }
+
+  const { error } = await supabase.from('predictions').insert({
+    participant_id: participantId,
+    match_id: matchId,
+    brazil_score: brazilScore,
+    opponent_score: opponentScore
+  })
+
+  if (error) throw error
+
+  return { message: 'Palpite lancado com sucesso!' }
+}
+
 exports.handler = async (event) => {
   try {
     const authHeader = event.headers.authorization || event.headers.Authorization || ''
@@ -131,18 +180,11 @@ exports.handler = async (event) => {
     }
 
     if (action === 'create_prediction') {
-      const { error } = await supabase.from('predictions').insert({
-        participant_id: body.participant_id,
-        match_id: body.match_id,
-        brazil_score: body.brazil_score,
-        opponent_score: body.opponent_score
-      })
-
-      if (error) throw error
+      const result = await createOrUpdatePrediction(supabase, body)
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: 'Palpite lançado com sucesso!' })
+        body: JSON.stringify(result)
       }
     }
 

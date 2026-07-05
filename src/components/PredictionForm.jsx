@@ -3,6 +3,19 @@ import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 import { saveLocalPrediction } from '../services/localStore'
 import { Send, User, Users } from 'lucide-react'
 
+async function getPredictionCount(participantId) {
+  const { count, error } = await supabase
+    .from('predictions')
+    .select('id', { count: 'exact', head: true })
+    .eq('participant_id', participantId)
+
+  if (error) {
+    throw error
+  }
+
+  return count || 0
+}
+
 export function PredictionForm({ match, onSuccess }) {
   const [name, setName] = useState('')
   const [sector, setSector] = useState('')
@@ -54,7 +67,9 @@ export function PredictionForm({ match, onSuccess }) {
         participant = data
       }
 
-      if (participant.prediction_count >= 2) {
+      const predictionCount = await getPredictionCount(participant.id)
+
+      if (predictionCount >= 2) {
         throw new Error('Voce ja usou seus 2 palpites!')
       }
 
