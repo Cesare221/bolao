@@ -118,11 +118,11 @@ export default function HomePage() {
         <strong className="app-footer-name">Cesar Augusto</strong>
         <a
           className="app-footer-link"
-          href="https://cesarddv.com.br"
+          href="https://cesarddev.com.br"
           target="_blank"
           rel="noreferrer"
         >
-          cesarddv.com.br
+          cesarddev.com.br
         </a>
       </footer>
     </div>
