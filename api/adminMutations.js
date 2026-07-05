@@ -1,5 +1,21 @@
 import { createClient } from '@supabase/supabase-js'
 
+const baseRankings = new Map([
+  ['adrianne', { total_points: 3, exact_scores: 3, correct_outcomes: 3 }],
+  ['fran', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['francilda', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['stefany', { total_points: 2, exact_scores: 2, correct_outcomes: 2 }],
+  ['noel', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['denise', { total_points: 2, exact_scores: 2, correct_outcomes: 2 }],
+  ['huainny', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['andreza', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['wilson', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['regineide', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['rafael', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['carol', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }],
+  ['giza', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }]
+])
+
 function calculatePredictionBreakdown(prediction, actualBrazilScore, actualOpponentScore) {
   if (actualBrazilScore === null || actualOpponentScore === null) {
     return {
@@ -84,6 +100,12 @@ async function recalculateRanking(supabase) {
   if (participantsError) throw participantsError
 
   for (const participant of participantsData || []) {
+    const baseStats = baseRankings.get(String(participant.name || '').trim().toLowerCase()) || {
+      total_points: 0,
+      exact_scores: 0,
+      correct_outcomes: 0
+    }
+
     const stats = (participant.predictions || []).reduce((sum, pr) => {
       const breakdown = calculatePredictionBreakdown(
         pr,
@@ -96,7 +118,11 @@ async function recalculateRanking(supabase) {
         exactScores: sum.exactScores + breakdown.exactScore,
         correctOutcomes: sum.correctOutcomes + breakdown.correctOutcome
       }
-    }, { totalPoints: 0, exactScores: 0, correctOutcomes: 0 })
+    }, {
+      totalPoints: baseStats.total_points,
+      exactScores: baseStats.exact_scores,
+      correctOutcomes: baseStats.correct_outcomes
+    })
 
     const { error } = await supabase.from('rankings').upsert({
       participant_id: participant.id,
