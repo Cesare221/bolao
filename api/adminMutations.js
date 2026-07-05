@@ -16,6 +16,8 @@ const baseRankings = new Map([
   ['giza', { total_points: 1, exact_scores: 1, correct_outcomes: 1 }]
 ])
 
+const baselineMatchApiIds = new Set([1001, 1002, 1003, 1004])
+
 function calculatePredictionBreakdown(prediction, actualBrazilScore, actualOpponentScore) {
   if (actualBrazilScore === null || actualOpponentScore === null) {
     return {
@@ -95,7 +97,7 @@ async function recalculateRanking(supabase) {
 
   const { data: participantsData, error: participantsError } = await supabase
     .from('participants')
-    .select('id,name,sector,predictions(id,brazil_score,opponent_score,points,matches(brazil_score,opponent_score,is_finished))')
+    .select('id,name,sector,predictions(id,brazil_score,opponent_score,points,matches(api_id,brazil_score,opponent_score,is_finished))')
 
   if (participantsError) throw participantsError
 
@@ -107,6 +109,10 @@ async function recalculateRanking(supabase) {
     }
 
     const stats = (participant.predictions || []).reduce((sum, pr) => {
+      if (baselineMatchApiIds.has(pr.matches?.api_id)) {
+        return sum
+      }
+
       const breakdown = calculatePredictionBreakdown(
         pr,
         pr.matches?.brazil_score ?? pr.brazil_score ?? null,
